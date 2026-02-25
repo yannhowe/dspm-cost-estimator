@@ -466,7 +466,8 @@
                             <li><strong>Compute Resources:</strong> <span id="computeDetail"></span></li>
                         </ul>
                         <p style="margin-top: 10px;"><strong>Deployment Architecture:</strong> Each subscription gets 1 Key Vault (stores API credentials) and network infrastructure in each enabled region. Scanner VMs are created temporarily during scans and automatically deleted after completion.</p>
-                        <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 resources). VM costs shown are averaged monthly for budgeting purposes (e.g., quarterly scans = 1 scan every 3 months = 1/3 scan per month average).</p>
+                        <p style="margin-top: 10px;"><strong>Cost Averaging:</strong> VM costs represent actual scan hours. For quarterly scans, costs are averaged monthly for budgeting (e.g., 1 scan every 3 months = 1/3 of the scan cost per month on average).</p>
+                        <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 always-on resources, billed at 730 hrs/month).</p>
                     </div>
 
                     <div class="info-box" style="background: #d1ecf1; border-left-color: #0c5460;">
@@ -643,11 +644,22 @@
                 // Update details
                 const scanFrequencyText = scanFrequencyLabel[scanFrequency];
                 document.getElementById('keyVaultDetail').textContent =
-                    `${secretReadsPerMonth.toFixed(0)} secret reads/month ÷ 10,000 × $0.03 (${subscriptions} Key Vaults deployed)`;
+                    `${secretReadsPerMonth.toFixed(1)} secret reads/month ÷ 10,000 × $0.03 (${subscriptions} Key Vaults deployed)`;
                 document.getElementById('networkDetail').textContent =
-                    `${subscriptions} subscription(s) × ${regions} region(s) × 730 hrs/month`;
-                document.getElementById('computeDetail').textContent =
-                    `${vmHoursPerMonth.toFixed(1)} VM hours/month (${scanFrequencyText}: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions)`;
+                    `${subscriptions} subscription(s) × ${regions} region(s) × 730 hrs/month (always-on resources)`;
+
+                // Show actual scan count based on frequency
+                let scanDescription = '';
+                if (scanFrequency === 'quarterly') {
+                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (1 scan per quarter: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions ÷ 3 months)`;
+                } else if (scanFrequency === 'monthly') {
+                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (1 scan per month: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions)`;
+                } else if (scanFrequency === 'biweekly') {
+                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (2 scans per month: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions × 2)`;
+                } else if (scanFrequency === 'weekly') {
+                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (4 scans per month: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions × 4)`;
+                }
+                document.getElementById('computeDetail').textContent = scanDescription;
 
                 // Toggle NAT Gateway and Public IP visibility (Public IP only deployed with NAT Gateway)
                 document.getElementById('natGatewayRow').style.display = includeNatGateway ? 'flex' : 'none';
