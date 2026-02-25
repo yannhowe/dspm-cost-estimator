@@ -417,7 +417,7 @@
                         <h3 style="margin-bottom: 15px; color: #333;">Cost Breakdown</h3>
 
                         <div class="breakdown-item">
-                            <span class="label">Key Vault (per subscription)</span>
+                            <span class="label">Key Vault (transaction-based, negligible)</span>
                             <span class="value" id="keyVaultCost">$0.00</span>
                         </div>
 
@@ -465,7 +465,8 @@
                             <li><strong>Network Resources:</strong> <span id="networkDetail"></span></li>
                             <li><strong>Compute Resources:</strong> <span id="computeDetail"></span></li>
                         </ul>
-                        <p style="margin-top: 10px;"><strong>Note:</strong> Actual costs may vary based on usage patterns, data volume, and Azure pricing changes. This estimate does not include storage costs for data snapshots or RDS/Redshift cloning if enabled.</p>
+                        <p style="margin-top: 10px;"><strong>Deployment Architecture:</strong> Each subscription gets 1 Key Vault (stores API credentials) and network infrastructure in each enabled region. Scanner VMs are created temporarily during scans and automatically deleted after completion.</p>
+                        <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 resources). Actual costs may vary based on usage patterns, data volume, and Azure pricing changes.</p>
                     </div>
 
                     <div class="info-box" style="background: #d1ecf1; border-left-color: #0c5460;">
@@ -490,10 +491,10 @@
                     <p>Performing DSPM scans results in a slight increase in cloud consumption costs. The exact amount varies based on the size of the environment and Azure's pricing structure.</p>
                     <p style="margin-top: 10px;"><strong>Resources provisioned by CrowdStrike DSPM:</strong></p>
                     <ul>
-                        <li><strong>Per Subscription:</strong> Azure Key Vault</li>
-                        <li><strong>Per Region per Subscription:</strong> Virtual Network, Private Endpoint, NAT Gateway, Public IP</li>
-                        <li><strong>At Scan Time:</strong> Azure VM (Standard_F8s_v2) - automatically removed after scan</li>
-                        <li><strong>Minimal Traffic Costs:</strong> Inbound/outbound Virtual Network traffic, NAT Gateway data processing</li>
+                        <li><strong>Per Subscription:</strong> Azure Key Vault (1 per subscription, stores API credentials)</li>
+                        <li><strong>Per Region per Subscription:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway enabled)</li>
+                        <li><strong>At Scan Time:</strong> Azure VM Standard_F8s_v2 (temporary, auto-deleted after scan)</li>
+                        <li><strong>Transaction Costs:</strong> Key Vault secret operations (~$0.03/10k reads), minimal data transfer</li>
                     </ul>
                     <p style="margin-top: 10px;"><strong>Official Azure Pricing References:</strong></p>
                     <ul>
@@ -587,7 +588,6 @@
                 const scansPerMonth = scanFrequencyMap[scanFrequency];
 
                 // Fetch prices from Azure API (using fallback values if API fails)
-                const keyVaultPrice = await fetchAzurePrice('Key Vault', 'Key Vault') || 0.03; // ~$0.03/10k operations/month
                 const vnetPrice = 0; // Virtual Network is generally free
                 const privateEndpointPrice = await fetchAzurePrice('Private Link', 'Private Endpoint') || 0.01; // ~$0.01/hour
                 const natGatewayPrice = includeNatGateway ? (await fetchAzurePrice('Virtual Network', 'NAT Gateway') || 0.045) : 0; // ~$0.045/hour
@@ -598,7 +598,11 @@
 
                 // Calculate monthly costs
                 // Per subscription costs
-                const keyVaultMonthlyCost = keyVaultPrice * subscriptions * 30; // Approximate monthly usage
+                // Key Vault: Standard tier has no base fee, only transaction costs
+                // Each scanner VM reads secrets once per scan
+                // Cost: $0.03 per 10,000 secret operations
+                const secretReadsPerMonth = scansPerMonth * subscriptions * regions; // VMs read secrets at scan start
+                const keyVaultMonthlyCost = (secretReadsPerMonth / 10000) * 0.03; // Negligible cost
 
                 // Per region per subscription costs (24/7 resources)
                 const privateEndpointMonthlyCost = privateEndpointPrice * subscriptions * regions * 730; // 730 hours/month
@@ -631,7 +635,7 @@
 
                 // Update details
                 document.getElementById('keyVaultDetail').textContent =
-                    `${subscriptions} subscription(s) × $${keyVaultPrice.toFixed(3)}/month`;
+                    `${secretReadsPerMonth.toFixed(0)} secret reads/month ÷ 10,000 × $0.03 (${subscriptions} Key Vaults deployed)`;
                 document.getElementById('networkDetail').textContent =
                     `${subscriptions} subscription(s) × ${regions} region(s) × 730 hrs/month`;
                 document.getElementById('computeDetail').textContent =

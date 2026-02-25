@@ -23,13 +23,19 @@ The calculator models costs based on the official CrowdStrike Azure Bicep deploy
 
 ```
 Total Monthly Cost =
-  (Key Vault × subscriptions) +
+  (Key Vault transaction costs - negligible) +
   (Private Endpoint × subscriptions × regions × 730 hrs) +
   (NAT Gateway × subscriptions × regions × 730 hrs) [if enabled] +
   (Public IP × subscriptions × regions × 730 hrs) [if NAT Gateway enabled] +
   (VM hours × scans per month × subscriptions × regions × VM hourly rate) +
   (Estimated data transfer)
 ```
+
+**Key Vault costs are negligible** because:
+- Standard tier has no base monthly fee
+- Only charges $0.03 per 10,000 secret operations
+- Scanner VMs read secrets only at scan start (~once per scan)
+- Example: 100 subscriptions × quarterly scans = ~33 reads/month = $0.0001
 
 ### Resource Breakdown
 
@@ -39,7 +45,12 @@ Total Monthly Cost =
 - Template: [`scanningResourceGroup.bicep`](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningResourceGroup.bicep#L167-L189)
 - Resource: `kv-cs-<hash>`
 - SKU: Standard
-- Cost: ~$0.03/10k operations (~$0.90/month per subscription)
+- Contents: 1 secret (client-credentials with API client ID and secret)
+- Cost Model: Transaction-based ($0.03 per 10,000 secret operations)
+- **Actual Cost: Negligible** - Scanner VMs read secrets only at scan start
+  - Example: 100 subs × 2 regions × 0.33 quarterly scans/month = 66 reads/month
+  - Cost: 66 ÷ 10,000 × $0.03 = **$0.0002/month** (effectively free)
+- **Note**: Key Vault Standard has no base monthly fee, only per-transaction costs
 
 #### Per Region Per Subscription (Always-On)
 
@@ -82,9 +93,11 @@ Example: 30 subscriptions, 1 region each, quarterly scans (4 hours each)
 
 | Configuration | Monthly Cost | Key Resources |
 |---------------|--------------|---------------|
-| **With NAT Gateway** | ~$1,341 | Private EP ($219) + NAT GW ($986) + Public IP ($110) + Key Vault ($27) |
-| **Without NAT Gateway** | ~$246 | Private EP ($219) + Key Vault ($27) + minimal scan-time costs |
+| **With NAT Gateway** | ~$1,341 | Private EP ($219) + NAT GW ($986) + Public IP ($110) + Key Vault (~$0) |
+| **Without NAT Gateway** | ~$246 | Private EP ($219) + Key Vault (~$0) + minimal scan-time costs |
 | **Savings** | **~$1,095 (82%)** | Remove NAT Gateway + Public IP |
+
+**Note**: Key Vault costs are effectively $0 in practice (transaction-based pricing, minimal operations).
 
 ## 🔧 Cost Optimization
 
