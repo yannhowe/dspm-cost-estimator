@@ -344,25 +344,6 @@
                         <input type="number" id="regions" min="1" value="2" placeholder="Enter number of regions">
                         <small>Regions where DSPM scanning will occur</small>
                     </div>
-
-                    <div class="form-field">
-                        <label for="location">Azure Region for Pricing</label>
-                        <select id="location">
-                            <option value="eastus">East US</option>
-                            <option value="eastus2">East US 2</option>
-                            <option value="westus">West US</option>
-                            <option value="westus2">West US 2</option>
-                            <option value="centralus">Central US</option>
-                            <option value="northeurope">North Europe</option>
-                            <option value="westeurope">West Europe</option>
-                            <option value="uksouth">UK South</option>
-                            <option value="ukwest">UK West</option>
-                            <option value="southeastasia">Southeast Asia</option>
-                            <option value="eastasia">East Asia</option>
-                            <option value="australiaeast">Australia East</option>
-                        </select>
-                        <small>Primary region for cost calculation</small>
-                    </div>
                 </div>
 
                 <div class="checkbox-group">
@@ -602,7 +583,6 @@
             // Get input values
             const subscriptions = parseInt(document.getElementById('subscriptions').value) || 1;
             const regions = parseInt(document.getElementById('regions').value) || 1;
-            const location = document.getElementById('location').value;
             const includeNatGateway = document.getElementById('includeNatGateway').checked;
             const scanFrequency = document.getElementById('scanFrequency').value;
             const scanDuration = parseInt(document.getElementById('scanDuration').value) || 4;
@@ -739,7 +719,6 @@
         function resetForm() {
             document.getElementById('subscriptions').value = '1';
             document.getElementById('regions').value = '2';
-            document.getElementById('location').value = 'eastus';
             document.getElementById('includeNatGateway').checked = true;
             document.getElementById('scanFrequency').value = 'quarterly';
             document.getElementById('scanDuration').value = '4';
