@@ -428,22 +428,22 @@
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Virtual Network (per region)</span>
+                            <span class="label">Virtual Network (per subscription per region)</span>
                             <span class="value" id="vnetCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Private Endpoint (per region)</span>
+                            <span class="label">Private Endpoint (per subscription per region)</span>
                             <span class="value" id="privateEndpointCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="natGatewayRow">
-                            <span class="label">NAT Gateway (per region)</span>
+                            <span class="label">NAT Gateway (per subscription per region)</span>
                             <span class="value" id="natGatewayCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="publicIpRow">
-                            <span class="label">Public IP (per region, only with NAT Gateway)</span>
+                            <span class="label">Public IP (per subscription per region, only with NAT Gateway)</span>
                             <span class="value" id="publicIpCost">$0.00</span>
                         </div>
 
@@ -527,10 +527,11 @@
                     <p style="margin-top: 10px;"><strong>Resources provisioned by CrowdStrike DSPM:</strong></p>
                     <ul>
                         <li><strong>Per Subscription:</strong> Azure Key Vault (1 per subscription, stores API credentials)</li>
-                        <li><strong>Per Region per Subscription:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway enabled)</li>
+                        <li><strong>Per Subscription Per Region:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway enabled) - Each subscription gets isolated scanning infrastructure in each enabled region</li>
                         <li><strong>At Scan Time:</strong> Azure VM Standard_F8s_v2 (temporary, auto-deleted after scan)</li>
                         <li><strong>Transaction Costs:</strong> Key Vault secret operations (~$0.03/10k reads), data transfer (metadata only, no cross-region costs)</li>
                     </ul>
+                    <p style="margin-top: 10px;"><strong>Important:</strong> Each subscription gets its own isolated scanning environment. With 10 subscriptions × 1 region, you deploy 10 separate infrastructures, not 1 shared infrastructure. This is why costs scale with subscription count.</p>
                     <p style="margin-top: 10px;"><strong>Official Azure Pricing References:</strong></p>
                     <ul>
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/key-vault/" target="_blank">Key Vault Pricing</a></li>
