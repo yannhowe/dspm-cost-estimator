@@ -436,8 +436,8 @@
                             <span class="value" id="natGatewayCost">$0.00</span>
                         </div>
 
-                        <div class="breakdown-item">
-                            <span class="label">Public IP (per region)</span>
+                        <div class="breakdown-item" id="publicIpRow">
+                            <span class="label">Public IP (per region, only with NAT Gateway)</span>
                             <span class="value" id="publicIpCost">$0.00</span>
                         </div>
 
@@ -471,10 +471,12 @@
                     <div class="info-box" style="background: #d1ecf1; border-left-color: #0c5460;">
                         <h4>💡 Cost Optimization Tips</h4>
                         <ul>
-                            <li>Configure DSPM without NAT Gateway to reduce monthly costs (see <a href="https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans#t13b00f2" target="_blank">network configuration options</a>)</li>
+                            <li><strong>Remove NAT Gateway</strong> to save ~70% on infrastructure costs (see <a href="https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans#t13b00f2" target="_blank">network configuration options</a>)</li>
+                            <li><strong>Without NAT Gateway:</strong> Scanner VMs use temporary public IPs during scans only (minimal cost)</li>
+                            <li><strong>With NAT Gateway:</strong> Provides shared static IP for all scanners (higher cost but centralized)</li>
                             <li>Adjust scan frequency based on your compliance requirements (quarterly is default)</li>
                             <li>Limit scanning to specific regions where sensitive data resides</li>
-                            <li>Use resource tags to track DSPM-related costs in your Azure billing</li>
+                            <li>Consolidate subscriptions when possible - each adds infrastructure overhead</li>
                         </ul>
                     </div>
                 </div>
@@ -601,7 +603,8 @@
                 // Per region per subscription costs (24/7 resources)
                 const privateEndpointMonthlyCost = privateEndpointPrice * subscriptions * regions * 730; // 730 hours/month
                 const natGatewayMonthlyCost = natGatewayPrice * subscriptions * regions * 730;
-                const publicIpMonthlyCost = publicIpPrice * subscriptions * regions * 730;
+                // Public IP is only deployed when NAT Gateway is enabled (conditional resource)
+                const publicIpMonthlyCost = includeNatGateway ? (publicIpPrice * subscriptions * regions * 730) : 0;
                 const vnetMonthlyCost = vnetPrice * subscriptions * regions;
 
                 // VM costs (only during scans)
@@ -634,8 +637,9 @@
                 document.getElementById('computeDetail').textContent =
                     `${vmHoursPerMonth.toFixed(1)} VM hours/month (${scansPerMonth.toFixed(2)} scans × ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions)`;
 
-                // Toggle NAT Gateway visibility
+                // Toggle NAT Gateway and Public IP visibility (Public IP only deployed with NAT Gateway)
                 document.getElementById('natGatewayRow').style.display = includeNatGateway ? 'flex' : 'none';
+                document.getElementById('publicIpRow').style.display = includeNatGateway ? 'flex' : 'none';
 
                 // Hide loading, show results
                 document.getElementById('loading').style.display = 'none';
