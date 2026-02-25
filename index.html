@@ -589,7 +589,15 @@
                 }
                 filter += ` and armRegionName eq '${location}' and priceType eq 'Consumption'`;
 
-                const response = await fetch(`${AZURE_API_URL}?$filter=${encodeURIComponent(filter)}`);
+                const response = await fetch(`${AZURE_API_URL}?$filter=${encodeURIComponent(filter)}`, {
+                    timeout: 10000 // 10 second timeout
+                });
+
+                if (!response.ok) {
+                    console.error(`Azure API returned status ${response.status} for ${serviceName}/${productName}`);
+                    return 0;
+                }
+
                 const data = await response.json();
 
                 if (data.Items && data.Items.length > 0) {
@@ -599,9 +607,10 @@
                     return price;
                 }
 
+                console.warn(`No pricing data found for ${serviceName}/${productName} in ${location}`);
                 return 0;
             } catch (error) {
-                console.error('Error fetching Azure price:', error);
+                console.error(`Error fetching Azure price for ${serviceName}/${productName}:`, error);
                 return 0;
             }
         }
@@ -630,14 +639,24 @@
                 // Calculate scans per month
                 const scansPerMonth = scanFrequencyMap[scanFrequency];
 
+                // Validate reasonable limits
+                if (subscriptions > 10000) {
+                    showError('Number of subscriptions seems unusually high. Please verify your input. For very large deployments, contact your CrowdStrike Technical Account Manager for accurate cost estimation.');
+                    document.getElementById('loading').style.display = 'none';
+                    return;
+                }
+
                 // Fetch prices from Azure API (using fallback values if API fails)
+                console.log('Fetching pricing data from Azure API...');
                 const vnetPrice = 0; // Virtual Network is generally free
-                const privateEndpointPrice = await fetchAzurePrice('Private Link', 'Private Endpoint') || 0.01; // ~$0.01/hour
-                const natGatewayPrice = includeNatGateway ? (await fetchAzurePrice('Virtual Network', 'NAT Gateway') || 0.045) : 0; // ~$0.045/hour
-                const publicIpPrice = await fetchAzurePrice('Virtual Network', 'IP Addresses') || 0.005; // ~$0.005/hour
+                const privateEndpointPrice = await fetchAzurePrice('Private Link', 'Private Endpoint', location) || 0.01; // ~$0.01/hour
+                const natGatewayPrice = includeNatGateway ? (await fetchAzurePrice('Virtual Network', 'NAT Gateway', location) || 0.045) : 0; // ~$0.045/hour
+                const publicIpPrice = await fetchAzurePrice('Virtual Network', 'IP Addresses', location) || 0.005; // ~$0.005/hour
 
                 // VM pricing - Standard_F8s_v2 (8 vCPUs, 16 GiB RAM)
-                const vmHourlyPrice = await fetchAzurePrice('Virtual Machines', 'Standard_F8s_v2') || 0.406; // ~$0.406/hour
+                const vmHourlyPrice = await fetchAzurePrice('Virtual Machines', 'Standard_F8s_v2', location) || 0.406; // ~$0.406/hour
+
+                console.log('Pricing data retrieved:', { privateEndpointPrice, natGatewayPrice, publicIpPrice, vmHourlyPrice });
 
                 // Calculate monthly costs
                 // Per subscription costs
@@ -694,13 +713,13 @@
 
                 // Update pricing details from API
                 document.getElementById('privateEndpointPriceDetail').textContent =
-                    `$${privateEndpointPrice.toFixed(4)}/hour in ${region}`;
+                    `$${privateEndpointPrice.toFixed(4)}/hour in ${location}`;
                 document.getElementById('natGatewayPriceDetail').textContent =
-                    `$${natGatewayPrice.toFixed(4)}/hour in ${region}`;
+                    `$${natGatewayPrice.toFixed(4)}/hour in ${location}`;
                 document.getElementById('publicIpPriceDetail').textContent =
-                    `$${publicIpPrice.toFixed(4)}/hour in ${region}`;
+                    `$${publicIpPrice.toFixed(4)}/hour in ${location}`;
                 document.getElementById('vmPriceDetail').textContent =
-                    `$${vmHourlyPrice.toFixed(4)}/hour in ${region}`;
+                    `$${vmHourlyPrice.toFixed(4)}/hour in ${location}`;
 
                 // Update cost assumption details
                 document.getElementById('keyVaultDetail').textContent =
@@ -731,7 +750,7 @@
 
             } catch (error) {
                 console.error('Error calculating costs:', error);
-                showError('An error occurred while calculating costs. Please try again or use the fallback pricing values.');
+                showError(`An error occurred while calculating costs: ${error.message}. The calculator may have used fallback pricing values. For large deployments (>1000 subscriptions), please contact your CrowdStrike Technical Account Manager for accurate enterprise cost estimation.`);
                 document.getElementById('loading').style.display = 'none';
             }
         }
