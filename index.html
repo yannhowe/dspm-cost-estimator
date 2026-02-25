@@ -453,7 +453,7 @@
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Data Transfer (estimated)</span>
+                            <span class="label">Data Transfer (metadata only, minimal)</span>
                             <span class="value" id="transferCost">$0.00</span>
                         </div>
 
@@ -473,7 +473,7 @@
                         </ul>
                         <p style="margin-top: 10px;"><strong>Deployment Architecture:</strong> Each subscription gets 1 Key Vault (stores API credentials) and network infrastructure in each enabled region. Scanner VMs are created temporarily during scans and automatically deleted after completion.</p>
                         <p style="margin-top: 10px;"><strong>Cost Averaging:</strong> VM costs represent actual scan hours. For quarterly scans, costs are averaged monthly for budgeting (e.g., 1 scan every 3 months = 1/3 of the scan cost per month on average).</p>
-                        <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 always-on resources, billed at 730 hrs/month).</p>
+                        <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 always-on resources, billed at 730 hrs/month). Data transfer costs are minimal because scanners only upload metadata, and all data reading happens within the same region (free intra-region transfer).</p>
                     </div>
 
                     <div class="info-box" style="background: #d1ecf1; border-left-color: #0c5460;">
@@ -486,6 +486,20 @@
                             <li>Limit scanning to specific regions where sensitive data resides</li>
                             <li>Consolidate subscriptions when possible - each adds infrastructure overhead</li>
                         </ul>
+                    </div>
+
+                    <div class="info-box" style="background: #e7f3ff; border-left-color: #004085;">
+                        <h4>📡 Data Transfer Cost Breakdown</h4>
+                        <p><strong>Why data transfer costs are minimal:</strong></p>
+                        <ul>
+                            <li><strong>No cross-region data movement:</strong> Scanner VMs are deployed in the same region as your data</li>
+                            <li><strong>Intra-region transfers are FREE:</strong> Scanner reads Azure Blob Storage containers locally (no Azure egress charges)</li>
+                            <li><strong>Only metadata uploaded:</strong> DSPM sends scan findings/classifications to CrowdStrike, not the actual data being scanned (~0.5 GB per scan)</li>
+                            <li><strong>Outbound internet costs:</strong> ~$0.087/GB for first 100 GB/month (metadata upload)</li>
+                            <li><strong>NAT Gateway data processing:</strong> ~$0.045/GB if NAT Gateway is enabled</li>
+                        </ul>
+                        <p style="margin-top: 10px;"><strong>Example:</strong> 30 subscriptions × 1 region × quarterly scans (1 scan/quarter = 0.33/month) = 10 scans/month × 0.5 GB = 5 GB/month = ~$0.44 outbound + ~$0.23 NAT processing = <strong>~$0.67/month total data transfer cost</strong></p>
+                        <p style="margin-top: 10px;"><em>Compared to infrastructure costs (NAT Gateway alone = $986/month for 30 regions), data transfer is negligible.</em></p>
                     </div>
                 </div>
             </div>
@@ -501,7 +515,7 @@
                         <li><strong>Per Subscription:</strong> Azure Key Vault (1 per subscription, stores API credentials)</li>
                         <li><strong>Per Region per Subscription:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway enabled)</li>
                         <li><strong>At Scan Time:</strong> Azure VM Standard_F8s_v2 (temporary, auto-deleted after scan)</li>
-                        <li><strong>Transaction Costs:</strong> Key Vault secret operations (~$0.03/10k reads), minimal data transfer</li>
+                        <li><strong>Transaction Costs:</strong> Key Vault secret operations (~$0.03/10k reads), data transfer (metadata only, no cross-region costs)</li>
                     </ul>
                     <p style="margin-top: 10px;"><strong>Official Azure Pricing References:</strong></p>
                     <ul>
@@ -629,8 +643,21 @@
                 const vmHoursPerMonth = scanDuration * scansPerMonth * subscriptions * regions;
                 const vmMonthlyCost = vmHourlyPrice * vmHoursPerMonth;
 
-                // Estimated data transfer costs (minimal)
-                const transferMonthlyCost = 5 * scansPerMonth * subscriptions * regions; // Estimate $5 per scan
+                // Data transfer costs (minimal - only metadata, not actual data)
+                // Scanner reads Blob Storage in same region (FREE intra-region transfer)
+                // Only metadata/findings sent to CrowdStrike cloud (~0.5 GB per scan)
+                // Outbound internet: $0.087/GB for first 100 GB
+                // NAT Gateway processing: $0.045/GB (if enabled)
+                const metadataPerScanGB = 0.5; // ~500 MB of scan findings/metadata per subscription per region
+                const azureBandwidthCostPerGB = 0.087; // First 100 GB/month tier
+                const natGatewayProcessingCostPerGB = 0.045;
+
+                const totalScans = scansPerMonth * subscriptions * regions;
+                const metadataUploadCost = totalScans * metadataPerScanGB * azureBandwidthCostPerGB;
+                const natGatewayDataProcessingCost = includeNatGateway ?
+                    (totalScans * metadataPerScanGB * natGatewayProcessingCostPerGB) : 0;
+
+                const transferMonthlyCost = metadataUploadCost + natGatewayDataProcessingCost;
 
                 // Total
                 const totalMonthlyCost = keyVaultMonthlyCost + vnetMonthlyCost + privateEndpointMonthlyCost +
