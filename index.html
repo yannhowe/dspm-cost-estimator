@@ -13,7 +13,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #EC0000 0%, #1F60A2 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -28,7 +28,7 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            background: #000000;
             color: white;
             padding: 30px;
             text-align: center;
@@ -54,9 +54,9 @@
 
         .section h2 {
             font-size: 20px;
-            color: #333;
+            color: #000000;
             margin-bottom: 15px;
-            border-bottom: 2px solid #667eea;
+            border-bottom: 2px solid #EC0000;
             padding-bottom: 10px;
         }
 
@@ -91,7 +91,7 @@
         .form-field input:focus,
         .form-field select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #EC0000;
         }
 
         .form-field small {
@@ -136,22 +136,27 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #EC0000;
             color: white;
+            border: 2px solid #EC0000;
         }
 
         .btn-primary:hover {
+            background: #D30000;
+            border-color: #D30000;
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(236, 0, 0, 0.3);
         }
 
         .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
+            background: #FFFFFF;
+            color: #000000;
+            border: 2px solid #000000;
         }
 
         .btn-secondary:hover {
-            background: #e0e0e0;
+            background: #F8F8F8;
+            border-color: #000000;
         }
 
         .loading {
@@ -162,7 +167,7 @@
 
         .spinner {
             border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border-top: 3px solid #EC0000;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -180,10 +185,11 @@
         }
 
         .cost-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: linear-gradient(135deg, #F8F8F8 0%, #FFFFFF 100%);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
         }
 
         .cost-card h3 {
@@ -195,7 +201,7 @@
         .cost-card .amount {
             font-size: 32px;
             font-weight: bold;
-            color: #667eea;
+            color: #EC0000;
         }
 
         .breakdown {
@@ -217,7 +223,7 @@
             font-weight: bold;
             font-size: 18px;
             padding-top: 15px;
-            border-top: 2px solid #667eea;
+            border-top: 2px solid #EC0000;
         }
 
         .breakdown-item .label {
@@ -230,21 +236,21 @@
         }
 
         .info-box {
-            background: #fff3cd;
-            border-left: 4px solid #ffc107;
+            background: #FFF5F5;
+            border-left: 4px solid #EC0000;
             padding: 15px;
             margin-top: 20px;
             border-radius: 4px;
         }
 
         .info-box h4 {
-            color: #856404;
+            color: #D30000;
             margin-bottom: 10px;
             font-size: 14px;
         }
 
         .info-box p {
-            color: #856404;
+            color: #666666;
             font-size: 13px;
             line-height: 1.6;
         }
@@ -255,7 +261,7 @@
         }
 
         .info-box li {
-            color: #856404;
+            color: #666666;
             font-size: 13px;
             margin-bottom: 5px;
         }
