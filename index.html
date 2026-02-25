@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrowdStrike DSPM Cost Estimator for Azure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-field label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        .form-field input,
+        .form-field select {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-field small {
+            margin-top: 5px;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            font-size: 14px;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .cost-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .cost-card h3 {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .cost-card .amount {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .breakdown {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .breakdown-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 18px;
+            padding-top: 15px;
+            border-top: 2px solid #667eea;
+        }
+
+        .breakdown-item .label {
+            color: #555;
+        }
+
+        .breakdown-item .value {
+            color: #333;
+            font-weight: 600;
+        }
+
+        .info-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box h4 {
+            color: #856404;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .info-box p {
+            color: #856404;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .info-box ul {
+            margin-top: 10px;
+            margin-left: 20px;
+        }
+
+        .info-box li {
+            color: #856404;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        .info-box a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .info-box a:hover {
+            text-decoration: underline;
+        }
+
+        .error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            color: #721c24;
+        }
+
+        .footer {
+            background: #f5f5f5;
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                padding: 20px;
+            }
+
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ CrowdStrike DSPM Cost Estimator for Azure</h1>
+            <p>Estimate monthly costs for Data Security Posture Management scanning in your Azure environment</p>
+        </div>
+
+        <div class="content">
+            <!-- Configuration Section -->
+            <div class="section">
+                <h2>Environment Configuration</h2>
+                <div class="input-group">
+                    <div class="form-field">
+                        <label for="subscriptions">Number of Azure Subscriptions</label>
+                        <input type="number" id="subscriptions" min="1" value="1" placeholder="Enter number of subscriptions">
+                        <small>DSPM-enabled Azure subscriptions</small>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="regions">Number of Regions per Subscription</label>
+                        <input type="number" id="regions" min="1" value="2" placeholder="Enter number of regions">
+                        <small>Regions where DSPM scanning will occur</small>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="location">Azure Region for Pricing</label>
+                        <select id="location">
+                            <option value="eastus">East US</option>
+                            <option value="eastus2">East US 2</option>
+                            <option value="westus">West US</option>
+                            <option value="westus2">West US 2</option>
+                            <option value="centralus">Central US</option>
+                            <option value="northeurope">North Europe</option>
+                            <option value="westeurope">West Europe</option>
+                            <option value="uksouth">UK South</option>
+                            <option value="ukwest">UK West</option>
+                            <option value="southeastasia">Southeast Asia</option>
+                            <option value="eastasia">East Asia</option>
+                            <option value="australiaeast">Australia East</option>
+                        </select>
+                        <small>Primary region for cost calculation</small>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="includeNatGateway" checked>
+                    <label for="includeNatGateway">Include NAT Gateway costs (uncheck if using alternative DSPM network configuration)</label>
+                </div>
+            </div>
+
+            <!-- Scanning Frequency Section -->
+            <div class="section">
+                <h2>Scanning Configuration</h2>
+                <div class="input-group">
+                    <div class="form-field">
+                        <label for="scanFrequency">Scan Frequency</label>
+                        <select id="scanFrequency">
+                            <option value="quarterly">Quarterly (Default - Every 3 months)</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="biweekly">Bi-weekly</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                        <small>How often DSPM scans run</small>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="scanDuration">Average Scan Duration (hours)</label>
+                        <input type="number" id="scanDuration" min="1" max="24" value="4" placeholder="Enter scan duration">
+                        <small>Time VM runs per scan (1-24 hours)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button class="btn-primary" onclick="calculateCost()">Calculate Costs</button>
+                <button class="btn-secondary" onclick="resetForm()">Reset</button>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 15px; color: #666;">Fetching current Azure pricing...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage"></div>
+
+            <!-- Results Section -->
+            <div class="results" id="results">
+                <div class="section">
+                    <h2>Cost Estimate</h2>
+
+                    <div class="cost-card">
+                        <h3>Estimated Monthly Cost</h3>
+                        <div class="amount" id="totalCost">$0.00</div>
+                    </div>
+
+                    <div class="breakdown">
+                        <h3 style="margin-bottom: 15px; color: #333;">Cost Breakdown</h3>
+
+                        <div class="breakdown-item">
+                            <span class="label">Key Vault (per subscription)</span>
+                            <span class="value" id="keyVaultCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item">
+                            <span class="label">Virtual Network (per region)</span>
+                            <span class="value" id="vnetCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item">
+                            <span class="label">Private Endpoint (per region)</span>
+                            <span class="value" id="privateEndpointCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="natGatewayRow">
+                            <span class="label">NAT Gateway (per region)</span>
+                            <span class="value" id="natGatewayCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item">
+                            <span class="label">Public IP (per region)</span>
+                            <span class="value" id="publicIpCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item">
+                            <span class="label">Azure VM (Standard_F8s_v2)</span>
+                            <span class="value" id="vmCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item">
+                            <span class="label">Data Transfer (estimated)</span>
+                            <span class="value" id="transferCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item">
+                            <span class="label">Total Monthly Cost</span>
+                            <span class="value" id="totalBreakdown">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>📊 Cost Breakdown Details</h4>
+                        <p><strong>Infrastructure Costs:</strong></p>
+                        <ul>
+                            <li><strong>Key Vault:</strong> <span id="keyVaultDetail"></span></li>
+                            <li><strong>Network Resources:</strong> <span id="networkDetail"></span></li>
+                            <li><strong>Compute Resources:</strong> <span id="computeDetail"></span></li>
+                        </ul>
+                        <p style="margin-top: 10px;"><strong>Note:</strong> Actual costs may vary based on usage patterns, data volume, and Azure pricing changes. This estimate does not include storage costs for data snapshots or RDS/Redshift cloning if enabled.</p>
+                    </div>
+
+                    <div class="info-box" style="background: #d1ecf1; border-left-color: #0c5460;">
+                        <h4>💡 Cost Optimization Tips</h4>
+                        <ul>
+                            <li>Configure DSPM without NAT Gateway to reduce monthly costs (see <a href="https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans#t13b00f2" target="_blank">network configuration options</a>)</li>
+                            <li>Adjust scan frequency based on your compliance requirements (quarterly is default)</li>
+                            <li>Limit scanning to specific regions where sensitive data resides</li>
+                            <li>Use resource tags to track DSPM-related costs in your Azure billing</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Information Section -->
+            <div class="section">
+                <h2>About DSPM Cost Estimation</h2>
+                <div class="info-box">
+                    <h4>📖 How DSPM Costs Work</h4>
+                    <p>Performing DSPM scans results in a slight increase in cloud consumption costs. The exact amount varies based on the size of the environment and Azure's pricing structure.</p>
+                    <p style="margin-top: 10px;"><strong>Resources provisioned by CrowdStrike DSPM:</strong></p>
+                    <ul>
+                        <li><strong>Per Subscription:</strong> Azure Key Vault</li>
+                        <li><strong>Per Region per Subscription:</strong> Virtual Network, Private Endpoint, NAT Gateway, Public IP</li>
+                        <li><strong>At Scan Time:</strong> Azure VM (Standard_F8s_v2) - automatically removed after scan</li>
+                        <li><strong>Minimal Traffic Costs:</strong> Inbound/outbound Virtual Network traffic, NAT Gateway data processing</li>
+                    </ul>
+                    <p style="margin-top: 10px;"><strong>Official Azure Pricing References:</strong></p>
+                    <ul>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/key-vault/" target="_blank">Key Vault Pricing</a></li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-network/" target="_blank">Virtual Network Pricing</a></li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/private-link/" target="_blank">Private Link Pricing</a></li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/" target="_blank">NAT Gateway Pricing</a></li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/ip-addresses/" target="_blank">IP Addresses Pricing</a></li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/" target="_blank">Virtual Machine Pricing</a></li>
+                    </ul>
+                    <p style="margin-top: 10px;"><em>For personalized cost guidance, contact your CrowdStrike Technical Account Manager.</em></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>CrowdStrike DSPM Cost Estimator | Prices fetched from <a href="https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices" target="_blank">Azure Retail Prices API</a></p>
+            <p style="margin-top: 5px;">Reference: <a href="https://falcon.crowdstrike.com/documentation/page/jaf24dc6/dspm-cost-estimation" target="_blank">DSPM Cost Estimation Documentation</a></p>
+        </div>
+    </div>
+
+    <script>
+        // Pricing cache to avoid repeated API calls
+        let pricingCache = {};
+
+        // Azure Retail Prices API endpoint
+        const AZURE_API_URL = 'https://prices.azure.com/api/retail/prices';
+
+        // Scan frequency to scans per month mapping
+        const scanFrequencyMap = {
+            'quarterly': 1/3,      // Once every 3 months
+            'monthly': 1,          // Once per month
+            'biweekly': 2,         // Twice per month
+            'weekly': 4            // Four times per month
+        };
+
+        async function fetchAzurePrice(serviceName, productName, location) {
+            const cacheKey = `${serviceName}_${productName}_${location}`;
+
+            if (pricingCache[cacheKey]) {
+                return pricingCache[cacheKey];
+            }
+
+            try {
+                // Build filter for Azure API
+                let filter = `serviceName eq '${serviceName}'`;
+                if (productName) {
+                    filter += ` and productName eq '${productName}'`;
+                }
+                filter += ` and armRegionName eq '${location}' and priceType eq 'Consumption'`;
+
+                const response = await fetch(`${AZURE_API_URL}?$filter=${encodeURIComponent(filter)}`);
+                const data = await response.json();
+
+                if (data.Items && data.Items.length > 0) {
+                    // Get the first item's retail price
+                    const price = data.Items[0].retailPrice || 0;
+                    pricingCache[cacheKey] = price;
+                    return price;
+                }
+
+                return 0;
+            } catch (error) {
+                console.error('Error fetching Azure price:', error);
+                return 0;
+            }
+        }
+
+        async function calculateCost() {
+            // Get input values
+            const subscriptions = parseInt(document.getElementById('subscriptions').value) || 1;
+            const regions = parseInt(document.getElementById('regions').value) || 1;
+            const location = document.getElementById('location').value;
+            const includeNatGateway = document.getElementById('includeNatGateway').checked;
+            const scanFrequency = document.getElementById('scanFrequency').value;
+            const scanDuration = parseInt(document.getElementById('scanDuration').value) || 4;
+
+            // Validate inputs
+            if (subscriptions < 1 || regions < 1) {
+                showError('Please enter valid numbers for subscriptions and regions (minimum 1).');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('errorMessage').innerHTML = '';
+
+            try {
+                // Calculate scans per month
+                const scansPerMonth = scanFrequencyMap[scanFrequency];
+
+                // Fetch prices from Azure API (using fallback values if API fails)
+                const keyVaultPrice = await fetchAzurePrice('Key Vault', 'Key Vault') || 0.03; // ~$0.03/10k operations/month
+                const vnetPrice = 0; // Virtual Network is generally free
+                const privateEndpointPrice = await fetchAzurePrice('Private Link', 'Private Endpoint') || 0.01; // ~$0.01/hour
+                const natGatewayPrice = includeNatGateway ? (await fetchAzurePrice('Virtual Network', 'NAT Gateway') || 0.045) : 0; // ~$0.045/hour
+                const publicIpPrice = await fetchAzurePrice('Virtual Network', 'IP Addresses') || 0.005; // ~$0.005/hour
+
+                // VM pricing - Standard_F8s_v2 (8 vCPUs, 16 GiB RAM)
+                const vmHourlyPrice = await fetchAzurePrice('Virtual Machines', 'Standard_F8s_v2') || 0.406; // ~$0.406/hour
+
+                // Calculate monthly costs
+                // Per subscription costs
+                const keyVaultMonthlyCost = keyVaultPrice * subscriptions * 30; // Approximate monthly usage
+
+                // Per region per subscription costs (24/7 resources)
+                const privateEndpointMonthlyCost = privateEndpointPrice * subscriptions * regions * 730; // 730 hours/month
+                const natGatewayMonthlyCost = natGatewayPrice * subscriptions * regions * 730;
+                const publicIpMonthlyCost = publicIpPrice * subscriptions * regions * 730;
+                const vnetMonthlyCost = vnetPrice * subscriptions * regions;
+
+                // VM costs (only during scans)
+                const vmHoursPerMonth = scanDuration * scansPerMonth * subscriptions * regions;
+                const vmMonthlyCost = vmHourlyPrice * vmHoursPerMonth;
+
+                // Estimated data transfer costs (minimal)
+                const transferMonthlyCost = 5 * scansPerMonth * subscriptions * regions; // Estimate $5 per scan
+
+                // Total
+                const totalMonthlyCost = keyVaultMonthlyCost + vnetMonthlyCost + privateEndpointMonthlyCost +
+                                        natGatewayMonthlyCost + publicIpMonthlyCost + vmMonthlyCost + transferMonthlyCost;
+
+                // Update UI
+                document.getElementById('totalCost').textContent = `$${totalMonthlyCost.toFixed(2)}`;
+                document.getElementById('keyVaultCost').textContent = `$${keyVaultMonthlyCost.toFixed(2)}`;
+                document.getElementById('vnetCost').textContent = `$${vnetMonthlyCost.toFixed(2)}`;
+                document.getElementById('privateEndpointCost').textContent = `$${privateEndpointMonthlyCost.toFixed(2)}`;
+                document.getElementById('natGatewayCost').textContent = `$${natGatewayMonthlyCost.toFixed(2)}`;
+                document.getElementById('publicIpCost').textContent = `$${publicIpMonthlyCost.toFixed(2)}`;
+                document.getElementById('vmCost').textContent = `$${vmMonthlyCost.toFixed(2)}`;
+                document.getElementById('transferCost').textContent = `$${transferMonthlyCost.toFixed(2)}`;
+                document.getElementById('totalBreakdown').textContent = `$${totalMonthlyCost.toFixed(2)}`;
+
+                // Update details
+                document.getElementById('keyVaultDetail').textContent =
+                    `${subscriptions} subscription(s) × $${keyVaultPrice.toFixed(3)}/month`;
+                document.getElementById('networkDetail').textContent =
+                    `${subscriptions} subscription(s) × ${regions} region(s) × 730 hrs/month`;
+                document.getElementById('computeDetail').textContent =
+                    `${vmHoursPerMonth.toFixed(1)} VM hours/month (${scansPerMonth.toFixed(2)} scans × ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions)`;
+
+                // Toggle NAT Gateway visibility
+                document.getElementById('natGatewayRow').style.display = includeNatGateway ? 'flex' : 'none';
+
+                // Hide loading, show results
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('results').style.display = 'block';
+
+            } catch (error) {
+                console.error('Error calculating costs:', error);
+                showError('An error occurred while calculating costs. Please try again or use the fallback pricing values.');
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('subscriptions').value = '1';
+            document.getElementById('regions').value = '2';
+            document.getElementById('location').value = 'eastus';
+            document.getElementById('includeNatGateway').checked = true;
+            document.getElementById('scanFrequency').value = 'quarterly';
+            document.getElementById('scanDuration').value = '4';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('errorMessage').innerHTML = '';
+            pricingCache = {}; // Clear cache
+        }
+
+        function showError(message) {
+            document.getElementById('errorMessage').innerHTML = `
+                <div class="error">
+                    <strong>⚠️ Error:</strong> ${message}
+                </div>
+            `;
+        }
+
+        // Initialize - hide results on load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('results').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
