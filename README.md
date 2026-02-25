@@ -182,22 +182,35 @@ The calculator automatically fetches current Azure pricing and shows your estima
 
 - **Single-file HTML** - No build process required
 - **Client-side only** - No backend needed
-- **Azure Retail Prices API** - Real-time pricing data
+- **Static pricing data** - Loaded from `azure-pricing.json` (updated periodically)
 - **Responsive design** - Works on mobile and desktop
-- **Offline fallback** - Uses approximate prices if API unavailable
+- **US East region pricing** - Prices based on Azure US East; other regions may vary slightly
+
+### Updating Pricing
+
+To update Azure pricing data, run:
+
+```bash
+cd dspm-cost-estimator
+./update-pricing.sh
+```
+
+This script fetches current pricing from Azure Retail Prices API and updates `azure-pricing.json`.
+
+**Note:** Prices are based on Azure US East region. Pricing varies slightly by region (typically within 5-10%). For precise regional pricing, consult Azure's pricing calculator or your Azure billing.
 
 ## 📝 Cost Modeling Accuracy
 
 ✅ **Verified against official CrowdStrike Bicep templates**
 ✅ **All resources accounted for** (per subscription, per region, scan-time)
 ✅ **Conditional resource logic** (NAT Gateway, Public IP)
-✅ **Real-time Azure pricing** via official API
+✅ **Azure published pricing rates**
 ✅ **Conservative estimates** (includes data transfer buffer)
 
 **Note**: This calculator provides estimates for infrastructure costs. Actual costs may vary based on:
 - Data volume scanned
 - Network egress patterns
-- Azure region pricing variations
+- **Azure region pricing variations** (calculator uses US East pricing)
 - Specific subscription agreements
 
 For production cost planning, contact your CrowdStrike Technical Account Manager.

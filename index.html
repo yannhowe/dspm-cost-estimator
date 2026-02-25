@@ -466,7 +466,7 @@
                     <div class="info-box">
                         <h4>📊 Cost Breakdown Details</h4>
 
-                        <p><strong>Pricing (Retrieved from Azure Retail Prices API):</strong></p>
+                        <p><strong>Pricing (Based on Azure Published Rates):</strong></p>
                         <ul>
                             <li><strong>Private Endpoint:</strong> <span id="privateEndpointPriceDetail">Loading...</span></li>
                             <li><strong>NAT Gateway:</strong> <span id="natGatewayPriceDetail">Loading...</span></li>
@@ -547,17 +547,35 @@
         </div>
 
         <div class="footer">
-            <p>CrowdStrike DSPM Cost Estimator | Prices fetched from <a href="https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices" target="_blank">Azure Retail Prices API</a></p>
+            <p>CrowdStrike DSPM Cost Estimator | Pricing based on Azure US East region rates (<span id="lastUpdated">2026-02-25</span>)</p>
             <p style="margin-top: 5px;">Reference: <a href="https://falcon.crowdstrike.com/documentation/page/jaf24dc6/dspm-cost-estimation" target="_blank">DSPM Cost Estimation Documentation</a></p>
         </div>
     </div>
 
     <script>
-        // Pricing cache to avoid repeated API calls
-        let pricingCache = {};
+        // Pricing data
+        let pricingData = null;
 
-        // Azure Retail Prices API endpoint
-        const AZURE_API_URL = 'https://prices.azure.com/api/retail/prices';
+        // Load pricing from JSON file
+        async function loadPricingData() {
+            try {
+                const response = await fetch('azure-pricing.json');
+                pricingData = await response.json();
+                console.log(`Pricing data loaded (last updated: ${pricingData.lastUpdated})`);
+            } catch (error) {
+                console.error('Error loading pricing data:', error);
+                // Use hardcoded fallback if file can't be loaded
+                pricingData = {
+                    lastUpdated: "2026-02-25",
+                    pricing: {
+                        privateEndpoint: { pricePerHour: 0.01 },
+                        natGateway: { pricePerHour: 0.045 },
+                        publicIp: { pricePerHour: 0.005 },
+                        virtualMachine: { pricePerHour: 0.406 }
+                    }
+                };
+            }
+        }
 
         // Scan frequency to scans per month mapping
         const scanFrequencyMap = {
@@ -574,48 +592,13 @@
             'weekly': 'Weekly (4 scans per month)'
         };
 
-        async function fetchAzurePrice(serviceName, productName, location) {
-            const cacheKey = `${serviceName}_${productName}_${location}`;
-
-            if (pricingCache[cacheKey]) {
-                return pricingCache[cacheKey];
-            }
-
-            try {
-                // Build filter for Azure API
-                let filter = `serviceName eq '${serviceName}'`;
-                if (productName) {
-                    filter += ` and productName eq '${productName}'`;
-                }
-                filter += ` and armRegionName eq '${location}' and priceType eq 'Consumption'`;
-
-                const response = await fetch(`${AZURE_API_URL}?$filter=${encodeURIComponent(filter)}`, {
-                    timeout: 10000 // 10 second timeout
-                });
-
-                if (!response.ok) {
-                    console.error(`Azure API returned status ${response.status} for ${serviceName}/${productName}`);
-                    return 0;
-                }
-
-                const data = await response.json();
-
-                if (data.Items && data.Items.length > 0) {
-                    // Get the first item's retail price
-                    const price = data.Items[0].retailPrice || 0;
-                    pricingCache[cacheKey] = price;
-                    return price;
-                }
-
-                console.warn(`No pricing data found for ${serviceName}/${productName} in ${location}`);
-                return 0;
-            } catch (error) {
-                console.error(`Error fetching Azure price for ${serviceName}/${productName}:`, error);
-                return 0;
-            }
-        }
 
         async function calculateCost() {
+            // Ensure pricing data is loaded
+            if (!pricingData) {
+                await loadPricingData();
+            }
+
             // Get input values
             const subscriptions = parseInt(document.getElementById('subscriptions').value) || 1;
             const regions = parseInt(document.getElementById('regions').value) || 1;
@@ -646,17 +629,15 @@
                     return;
                 }
 
-                // Fetch prices from Azure API (using fallback values if API fails)
-                console.log('Fetching pricing data from Azure API...');
-                const vnetPrice = 0; // Virtual Network is generally free
-                const privateEndpointPrice = await fetchAzurePrice('Private Link', 'Private Endpoint', location) || 0.01; // ~$0.01/hour
-                const natGatewayPrice = includeNatGateway ? (await fetchAzurePrice('Virtual Network', 'NAT Gateway', location) || 0.045) : 0; // ~$0.045/hour
-                const publicIpPrice = await fetchAzurePrice('Virtual Network', 'IP Addresses', location) || 0.005; // ~$0.005/hour
+                // Get prices from loaded pricing data
+                console.log('Using pricing data from:', pricingData.lastUpdated);
+                const vnetPrice = 0; // Virtual Network is free
+                const privateEndpointPrice = pricingData.pricing.privateEndpoint.pricePerHour;
+                const natGatewayPrice = includeNatGateway ? pricingData.pricing.natGateway.pricePerHour : 0;
+                const publicIpPrice = pricingData.pricing.publicIp.pricePerHour;
+                const vmHourlyPrice = pricingData.pricing.virtualMachine.pricePerHour;
 
-                // VM pricing - Standard_F8s_v2 (8 vCPUs, 16 GiB RAM)
-                const vmHourlyPrice = await fetchAzurePrice('Virtual Machines', 'Standard_F8s_v2', location) || 0.406; // ~$0.406/hour
-
-                console.log('Pricing data retrieved:', { privateEndpointPrice, natGatewayPrice, publicIpPrice, vmHourlyPrice });
+                console.log('Pricing data:', { privateEndpointPrice, natGatewayPrice, publicIpPrice, vmHourlyPrice });
 
                 // Calculate monthly costs
                 // Per subscription costs
@@ -764,7 +745,6 @@
             document.getElementById('scanDuration').value = '4';
             document.getElementById('results').style.display = 'none';
             document.getElementById('errorMessage').innerHTML = '';
-            pricingCache = {}; // Clear cache
         }
 
         function showError(message) {
@@ -775,9 +755,13 @@
             `;
         }
 
-        // Initialize - hide results on load
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize - hide results on load and load pricing data
+        document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('results').style.display = 'none';
+            await loadPricingData();
+            if (pricingData && pricingData.lastUpdated) {
+                document.getElementById('lastUpdated').textContent = pricingData.lastUpdated;
+            }
         });
     </script>
 </body>

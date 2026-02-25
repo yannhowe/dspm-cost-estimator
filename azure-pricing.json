@@ -1,0 +1,66 @@
+{
+  "lastUpdated": "2026-02-25",
+  "region": "East US",
+  "currency": "USD",
+  "note": "Prices based on Azure US East region. Update periodically using update-pricing.sh script.",
+  "pricing": {
+    "privateEndpoint": {
+      "service": "Private Link",
+      "product": "Private Endpoint",
+      "pricePerHour": 0.01,
+      "unitOfMeasure": "1 Hour",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/private-link/"
+    },
+    "natGateway": {
+      "service": "Virtual Network",
+      "product": "NAT Gateway",
+      "pricePerHour": 0.045,
+      "unitOfMeasure": "1 Hour",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/"
+    },
+    "publicIp": {
+      "service": "Virtual Network",
+      "product": "IP Addresses - Standard Static Public IP",
+      "pricePerHour": 0.005,
+      "unitOfMeasure": "1 Hour",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/ip-addresses/"
+    },
+    "virtualMachine": {
+      "service": "Virtual Machines",
+      "product": "Standard_F8s_v2",
+      "pricePerHour": 0.406,
+      "unitOfMeasure": "1 Hour",
+      "vcpus": 8,
+      "memory": "16 GiB",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/virtual-machines/linux/"
+    },
+    "virtualNetwork": {
+      "service": "Virtual Network",
+      "product": "Virtual Network",
+      "pricePerHour": 0,
+      "unitOfMeasure": "Free",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/virtual-network/"
+    },
+    "keyVault": {
+      "service": "Key Vault",
+      "product": "Standard - Secret Operations",
+      "pricePer10kOperations": 0.03,
+      "unitOfMeasure": "10,000 operations",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/key-vault/"
+    },
+    "bandwidth": {
+      "service": "Bandwidth",
+      "product": "Data Transfer Out - First 100 GB",
+      "pricePerGB": 0.087,
+      "unitOfMeasure": "1 GB",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/bandwidth/"
+    },
+    "natGatewayDataProcessing": {
+      "service": "NAT Gateway",
+      "product": "Data Processed",
+      "pricePerGB": 0.045,
+      "unitOfMeasure": "1 GB",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/"
+    }
+  }
+}
