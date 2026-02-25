@@ -465,12 +465,26 @@
 
                     <div class="info-box">
                         <h4>📊 Cost Breakdown Details</h4>
-                        <p><strong>Infrastructure Costs:</strong></p>
+
+                        <p><strong>Pricing (Retrieved from Azure Retail Prices API):</strong></p>
                         <ul>
-                            <li><strong>Key Vault:</strong> <span id="keyVaultDetail"></span></li>
+                            <li><strong>Private Endpoint:</strong> <span id="privateEndpointPriceDetail">Loading...</span></li>
+                            <li><strong>NAT Gateway:</strong> <span id="natGatewayPriceDetail">Loading...</span></li>
+                            <li><strong>Public IP:</strong> <span id="publicIpPriceDetail">Loading...</span></li>
+                            <li><strong>VM (Standard_F8s_v2):</strong> <span id="vmPriceDetail">Loading...</span></li>
+                            <li><strong>Virtual Network:</strong> Free (Azure does not charge for VNet)</li>
+                            <li><strong>Key Vault:</strong> $0.03 per 10,000 secret operations (Standard tier, no base fee)</li>
+                        </ul>
+
+                        <p style="margin-top: 10px;"><strong>Cost Assumptions:</strong></p>
+                        <ul>
+                            <li><strong>Hours per Month:</strong> 730 hours (365 days ÷ 12 months × 24 hours)</li>
+                            <li><strong>Data Transfer:</strong> ~0.5 GB metadata per scan, Azure bandwidth $0.087/GB (first 100 GB), NAT Gateway processing $0.045/GB</li>
+                            <li><strong>Key Vault Transactions:</strong> <span id="keyVaultDetail"></span></li>
                             <li><strong>Network Resources:</strong> <span id="networkDetail"></span></li>
                             <li><strong>Compute Resources:</strong> <span id="computeDetail"></span></li>
                         </ul>
+
                         <p style="margin-top: 10px;"><strong>Deployment Architecture:</strong> Each subscription gets 1 Key Vault (stores API credentials) and network infrastructure in each enabled region. Scanner VMs are created temporarily during scans and automatically deleted after completion.</p>
                         <p style="margin-top: 10px;"><strong>Cost Averaging:</strong> VM costs represent actual scan hours. For quarterly scans, costs are averaged monthly for budgeting (e.g., 1 scan every 3 months = 1/3 of the scan cost per month on average).</p>
                         <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 always-on resources, billed at 730 hrs/month). Data transfer costs are minimal because scanners only upload metadata, and all data reading happens within the same region (free intra-region transfer).</p>
@@ -676,6 +690,18 @@
 
                 // Update details
                 const scanFrequencyText = scanFrequencyLabel[scanFrequency];
+
+                // Update pricing details from API
+                document.getElementById('privateEndpointPriceDetail').textContent =
+                    `$${privateEndpointPrice.toFixed(4)}/hour in ${region}`;
+                document.getElementById('natGatewayPriceDetail').textContent =
+                    `$${natGatewayPrice.toFixed(4)}/hour in ${region}`;
+                document.getElementById('publicIpPriceDetail').textContent =
+                    `$${publicIpPrice.toFixed(4)}/hour in ${region}`;
+                document.getElementById('vmPriceDetail').textContent =
+                    `$${vmHourlyPrice.toFixed(4)}/hour in ${region}`;
+
+                // Update cost assumption details
                 document.getElementById('keyVaultDetail').textContent =
                     `${secretReadsPerMonth.toFixed(1)} secret reads/month ÷ 10,000 × $0.03 (${subscriptions} Key Vaults deployed)`;
                 document.getElementById('networkDetail').textContent =
