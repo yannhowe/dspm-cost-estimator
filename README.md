@@ -4,7 +4,7 @@ A simple cost calculator for estimating monthly Azure costs when using CrowdStri
 
 ## 🚀 Live Demo
 
-**[Try it now →](https://yourusername.github.io/dspm-cost-estimator/)**
+**[Try it now →](https://yannhowe.github.io/dspm-cost-estimator/)**
 
 ## Features
 
