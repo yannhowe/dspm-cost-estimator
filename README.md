@@ -1,6 +1,6 @@
-# CrowdStrike DSPM Cost Estimator for Azure
+# CrowdStrike Multi-Cloud Cost Calculator
 
-A cost calculator for estimating monthly Azure infrastructure costs when using CrowdStrike's Data Security Posture Management (DSPM). Based on official Azure Bicep deployment templates and CrowdStrike documentation.
+A comprehensive cost calculator for estimating monthly infrastructure costs when using CrowdStrike Falcon Cloud Security across Azure, AWS, and GCP. Supports multiple features including IOMs (Indicators of Misconfiguration), Real-time Visibility & Detection, and DSPM (Data Security Posture Management).
 
 ## 🚀 Live Demo
 
@@ -8,168 +8,199 @@ A cost calculator for estimating monthly Azure infrastructure costs when using C
 
 ## Features
 
-- **Real-time pricing** from Azure Retail Prices API
-- **Accurate cost modeling** based on official CrowdStrike Bicep templates
-- Calculate costs for multiple subscriptions and regions
-- Toggle NAT Gateway for cost optimization (save ~70%)
-- Adjust scan frequency and duration
-- Detailed cost breakdown with optimization tips
+- **Multi-cloud support** - Azure, AWS, and GCP cost estimation
+- **Multiple security features** - IOMs, Real-time Visibility, and DSPM
+- **Real-time pricing** from cloud provider pricing APIs
+- **Accurate cost modeling** based on official CrowdStrike deployment templates
+- **Feature toggles** - Enable only the features you plan to use
+- **Detailed cost breakdown** with optimization tips
+- **Responsive design** - Works on mobile and desktop
 
-## 📊 How Costs Are Calculated
+## 🛡️ Supported Features
 
-The calculator models costs based on the official CrowdStrike Azure Bicep deployment templates. All resource costs are derived from actual Azure infrastructure that gets provisioned.
+### Azure
 
-### Cost Formula
+#### 1. Indicators of Misconfiguration (IOMs)
+**Always enabled** - Asset inventory and configuration compliance monitoring
 
-```
-Total Monthly Cost =
-  (Key Vault transaction costs - negligible) +
-  (Private Endpoint × subscriptions × regions × 730 hrs) +
-  (NAT Gateway × subscriptions × regions × 730 hrs) [if enabled] +
-  (Public IP × subscriptions × regions × 730 hrs) [if NAT Gateway enabled] +
-  (VM hours × scans per month × subscriptions × regions × VM hourly rate) +
-  (Estimated data transfer)
-```
+- Virtual Networks (free)
+- Custom RBAC roles (free)
+- **Cost: $0/month**
 
-**Key Vault costs are negligible** because:
-- Standard tier has no base monthly fee
-- Only charges $0.03 per 10,000 secret operations
-- Scanner VMs read secrets only at scan start (~once per scan)
-- Example: 100 subscriptions × quarterly scans = ~33 reads/month = $0.0001
+#### 2. Real-time Visibility & Detection
+Event-driven monitoring using Event Hubs for IOA (Indicator of Attack) detection
 
-### Resource Breakdown
+- Event Hubs namespace (shared infrastructure)
+- Configurable throughput units (1-20 TU)
+- Storage accounts for logs (legacy registrations)
+- Diagnostic settings (free)
+- **Cost: ~$30/month base** (shared across all subscriptions)
+- **Note**: Cost does NOT scale per subscription, but throughput may need adjustment based on total log volume
 
-#### Per Subscription (Always-On)
+#### 3. Data Security Posture Management (DSPM)
+Sensitive data scanning and classification
 
-**Key Vault** - Stores CrowdStrike API credentials
-- Template: [`scanningResourceGroup.bicep`](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningResourceGroup.bicep#L167-L189)
-- Resource: `kv-cs-<hash>`
-- SKU: Standard
-- Contents: 1 secret (client-credentials with API client ID and secret)
-- Cost Model: Transaction-based ($0.03 per 10,000 secret operations)
-- **Actual Cost: Negligible** - Scanner VMs read secrets only at scan start
-  - Example: 100 subs × 2 regions × 0.33 quarterly scans/month = 66 reads/month
-  - Cost: 66 ÷ 10,000 × $0.03 = **$0.0002/month** (effectively free)
-- **Note**: Key Vault Standard has no base monthly fee, only per-transaction costs
+- Key Vault (negligible cost)
+- Private Endpoint (~$7/month per region per subscription)
+- Virtual Network (free)
+- NAT Gateway (optional, ~$33/month per region per subscription)
+- Public IP (conditional with NAT Gateway, ~$4/month)
+- Scanner VMs (runtime only, ~$0.406/hour)
+- **Cost: ~$44/month per subscription per region** (with NAT Gateway)
 
-#### Per Region Per Subscription (Always-On)
+### AWS
+Coming soon - Asset Inventory, Real-time Visibility, and DSPM features
 
-**Private Endpoint** - Secure Key Vault access
-- Template: [`scanningKeyVaultPrivateEndpoint.bicep`](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningKeyVaultPrivateEndpoint.bicep#L38-L63)
-- Resource: `pep-csscanning-keyvault-<env>-<region>`
-- Cost: ~$0.01/hour = $7.30/month per region
-- **Why needed**: Allows scanner VMs to retrieve API credentials from Key Vault over private network
+### GCP
+Coming soon - Asset Inventory, Real-time Visibility, and DSPM features
 
-**Virtual Network** - Isolated scanning network
-- Template: [`scanningRegion.bicep`](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningRegion.bicep#L78-L119)
-- Resource: `vnet-csscanning-<env>-<region>` with 2 subnets
-- Cost: Free
+## 📊 Azure Cost Examples
 
-**NAT Gateway** (Optional) - Shared outbound IP for scanners
-- Template: [`scanningRegion.bicep`](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningRegion.bicep#L55-L70)
-- Resource: `ng-csscanning-scanners-<env>-<region>`
-- Deployment: Controlled by `agentlessScanningDeployNatGateway` parameter (default: true)
-- Cost: ~$0.045/hour = $32.85/month per region
-- **Cost impact**: 70% of total infrastructure cost
+### Example 1: IOMs Only (10 subscriptions)
+- IOMs enabled: **$0/month** (free resources only)
+- **Total: $0/month**
 
-**Public IP** (Conditional) - Static IP for NAT Gateway
-- Template: [`scanningRegion.bicep`](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningRegion.bicep#L43-L53)
-- Resource: `pip-csscanning-scanners-<env>-<region>`
-- Deployment: **Only deployed if NAT Gateway is enabled** (conditional resource)
-- Cost: ~$0.005/hour = $3.65/month per region
-- **Note**: Without NAT Gateway, VMs get temporary public IPs during scans only
+### Example 2: IOMs + Real-time Visibility (50 subscriptions)
+- IOMs: $0/month
+- Real-time Visibility (2 TU): ~$30/month (shared)
+- **Total: ~$30/month** for entire organization
 
-#### Scan-Time Resources (Temporary)
+### Example 3: All Features (30 subscriptions, 1 region each, quarterly DSPM scans)
+- IOMs: $0/month
+- Real-time Visibility (2 TU): ~$30/month (shared)
+- DSPM with NAT Gateway: ~$1,320/month (30 × $44)
+- **Total: ~$1,350/month**
 
-**Azure VM** - Data scanner
-- Not in templates (provisioned at runtime by CrowdStrike)
-- Size: Standard_F8s_v2 (8 vCPUs, 16 GiB RAM)
-- Cost: ~$0.406/hour
-- **Only charged during active scans**, automatically deleted after completion
+### Example 4: All Features Without NAT Gateway (Same as Example 3)
+- IOMs: $0/month
+- Real-time Visibility: ~$30/month
+- DSPM without NAT Gateway: ~$246/month (30 × $8.20)
+- **Total: ~$276/month**
+- **Savings: ~$1,074/month (80%)**
 
-### Cost Comparison
+## 🔧 Cost Optimization Tips
 
-Example: 30 subscriptions, 1 region each, quarterly scans (4 hours each)
+### Azure
 
-| Configuration | Monthly Cost | Key Resources |
-|---------------|--------------|---------------|
-| **With NAT Gateway** | ~$1,341 | Private EP ($219) + NAT GW ($986) + Public IP ($110) + Key Vault (~$0) |
-| **Without NAT Gateway** | ~$246 | Private EP ($219) + Key Vault (~$0) + minimal scan-time costs |
-| **Savings** | **~$1,095 (82%)** | Remove NAT Gateway + Public IP |
+#### 1. Remove NAT Gateway for DSPM
+**Save 70-82% on DSPM infrastructure costs**
 
-**Note**: Key Vault costs are effectively $0 in practice (transaction-based pricing, minimal operations).
+- With NAT Gateway: $44/month per subscription per region
+- Without NAT Gateway: $8-10/month per subscription per region
+- Same security posture and scanning functionality
+- Trade-off: Loss of centralized outbound IP address
 
-## 🔧 Cost Optimization
-
-### Remove NAT Gateway (Recommended)
-
-**Save ~70-82% on infrastructure costs** by configuring DSPM without NAT Gateway.
-
-**How it works:**
-- **With NAT Gateway**: All scanner VMs share a single static public IP (24/7 cost)
-- **Without NAT Gateway**: Each scanner VM gets a temporary public IP during scans only (minimal cost)
-
-**Security:**
-- Both configurations maintain the same security posture
-- Private Endpoint still secures Key Vault access
-- Scanner VMs still authenticate to CrowdStrike over HTTPS
-
-**Trade-offs:**
-- ❌ Lose centralized outbound IP address
-- ✅ Same scanning functionality and quality
-- ✅ 70-82% cost reduction
-
-**How to configure:**
+Configuration:
 ```bicep
-// In your deployment parameters
 agentlessScanningDeployNatGateway: false
 ```
 
-See: [DSPM Network Configuration Documentation](https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans#t13b00f2)
+#### 2. Right-size Event Hub Throughput Units
+- Start with 2 TU (default)
+- Monitor throughput metrics
+- Scale based on total log volume across all subscriptions
+- Cost: $11/month per TU (shared infrastructure)
 
-### Other Optimizations
+#### 3. Optimize DSPM Scanning
+- Use quarterly scans (default) for compliance
+- Only scan regions where sensitive data resides
+- Consolidate subscriptions where possible
 
-1. **Consolidate subscriptions** - Each subscription adds ~$44/month in infrastructure
-2. **Limit regions** - Only scan regions where sensitive data resides
-3. **Quarterly scanning** - Default and recommended frequency for compliance
-4. **Optimize scan duration** - Adjust based on data volume (minimal impact on cost)
+## 📚 Documentation References
 
-## 📚 References
+### Azure Resources
 
-### CrowdStrike Resources
+**IOMs & Real-time Visibility:**
+- [Resources Created When Registering Azure Accounts](https://falcon.crowdstrike.com/documentation/page/ec520d9c/resources-created-when-registering-azure-accounts)
+- [Event Hub Bicep Template](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/log-ingestion/eventHub.bicep)
 
-- **Official Bicep Templates**: [azure-bicep-cloud-registration](https://github.com/CrowdStrike/azure-bicep-cloud-registration)
-  - [scanningForSub.bicep](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningForSub.bicep) - Subscription-level deployment
-  - [scanningRegion.bicep](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningRegion.bicep) - Regional infrastructure
-  - [scanningResourceGroup.bicep](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningResourceGroup.bicep) - Key Vault and roles
-  - [scanningKeyVaultPrivateEndpoint.bicep](https://github.com/CrowdStrike/azure-bicep-cloud-registration/blob/main/modules/scanning-environment/scanningKeyVaultPrivateEndpoint.bicep) - Private endpoint
+**DSPM:**
+- [Official Bicep Templates](https://github.com/CrowdStrike/azure-bicep-cloud-registration)
+- [DSPM Cost Estimation](https://falcon.crowdstrike.com/documentation/page/jaf24dc6/dspm-cost-estimation)
+- [Configure DSPM Scans](https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans)
 
-- **Documentation**:
-  - [DSPM Cost Estimation](https://falcon.crowdstrike.com/documentation/page/jaf24dc6/dspm-cost-estimation)
-  - [Configure DSPM Scans](https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans)
-  - [Azure Resources Provisioned for DSPM](https://falcon.crowdstrike.com/documentation/page/ec520d9c/resources-created-when-registering-azure-accounts#tbe58a1a)
+### AWS Resources
+- [Terraform AWS Cloud Registration](https://github.com/CrowdStrike/terraform-aws-cloud-registration)
 
-### Azure Pricing
+### Pricing Resources
 
-- [Key Vault Pricing](https://azure.microsoft.com/en-us/pricing/details/key-vault/)
-- [Virtual Network Pricing](https://azure.microsoft.com/en-us/pricing/details/virtual-network/)
+**Azure:**
+- [Azure Retail Prices API](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices)
+- [Event Hubs Pricing](https://azure.microsoft.com/en-us/pricing/details/event-hubs/)
 - [Private Link Pricing](https://azure.microsoft.com/en-us/pricing/details/private-link/)
 - [NAT Gateway Pricing](https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/)
-- [IP Addresses Pricing](https://azure.microsoft.com/en-us/pricing/details/ip-addresses/)
-- [Virtual Machine Pricing](https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/)
-- [Azure Retail Prices API](https://learn.microsoft.com/en-us/rest/api/cost-management/retail-prices/azure-retail-prices)
+- [Virtual Machines Pricing](https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/)
+
+**AWS:**
+- [AWS Pricing Calculator](https://calculator.aws/)
+- [CloudTrail Pricing](https://aws.amazon.com/cloudtrail/pricing/)
+- [Lambda Pricing](https://aws.amazon.com/lambda/pricing/)
+
+**GCP:**
+- [Google Cloud Pricing Calculator](https://cloud.google.com/products/calculator)
+- [Cloud Logging Pricing](https://cloud.google.com/stackdriver/pricing)
+- [Pub/Sub Pricing](https://cloud.google.com/pubsub/pricing)
 
 ## 🚀 Usage
 
-Just open the page and enter:
-- Number of Azure subscriptions to scan
-- Number of regions per subscription
-- Azure region for pricing reference
-- Enable/disable NAT Gateway
-- Scan frequency (quarterly, monthly, bi-weekly, weekly)
-- Average scan duration per subscription
+1. Select your cloud provider (Azure, AWS, or GCP)
+2. Choose which features to enable
+3. Enter your environment details:
+   - Number of subscriptions/accounts/projects
+   - Number of regions
+   - Feature-specific configurations
+4. Click "Calculate Costs"
+5. Review the detailed cost breakdown
 
-The calculator automatically fetches current Azure pricing and shows your estimated monthly cost.
+## 💻 Technical Details
+
+### Architecture
+- **Single-file HTML** - No build process required
+- **Client-side only** - No backend needed
+- **Static pricing data** - Loaded from JSON files (updated periodically)
+- **Dynamic tabs** - Fast cloud provider switching
+- **Modular calculators** - Separate calculation logic per feature per cloud
+
+### File Structure
+```
+dspm-cost-estimator/
+├── index.html                      # Main calculator application
+├── pricing/
+│   ├── azure-pricing.json          # Azure pricing data
+│   ├── aws-pricing.json            # AWS pricing data
+│   └── gcp-pricing.json            # GCP pricing data
+├── scripts/
+│   ├── update-azure-pricing.sh     # Azure pricing updater
+│   ├── update-aws-pricing.sh       # AWS pricing updater
+│   └── update-gcp-pricing.sh       # GCP pricing updater
+└── README.md                       # This file
+```
+
+### Updating Pricing Data
+
+To update cloud provider pricing, run the appropriate script:
+
+**Azure:**
+```bash
+cd dspm-cost-estimator
+./scripts/update-azure-pricing.sh
+```
+
+**AWS:**
+```bash
+./scripts/update-aws-pricing.sh
+```
+
+**GCP:**
+```bash
+./scripts/update-gcp-pricing.sh
+```
+
+**Note**:
+- Azure script fetches real-time pricing from Azure Retail Prices API
+- AWS and GCP scripts use static pricing from documentation (manual updates recommended)
+- Prices are based on US regions (US East for Azure/AWS, us-east1 for GCP)
+- Regional price variations typically within 5-10%
 
 ## 🏗️ Deploy to GitHub Pages
 
@@ -178,42 +209,33 @@ The calculator automatically fetches current Azure pricing and shows your estima
 3. Select branch (main) and root directory
 4. Save and visit your GitHub Pages URL
 
-## 💻 Technical Details
-
-- **Single-file HTML** - No build process required
-- **Client-side only** - No backend needed
-- **Static pricing data** - Loaded from `azure-pricing.json` (updated periodically)
-- **Responsive design** - Works on mobile and desktop
-- **US East region pricing** - Prices based on Azure US East; other regions may vary slightly
-
-### Updating Pricing
-
-To update Azure pricing data, run:
-
-```bash
-cd dspm-cost-estimator
-./update-pricing.sh
-```
-
-This script fetches current pricing from Azure Retail Prices API and updates `azure-pricing.json`.
-
-**Note:** Prices are based on Azure US East region. Pricing varies slightly by region (typically within 5-10%). For precise regional pricing, consult Azure's pricing calculator or your Azure billing.
-
 ## 📝 Cost Modeling Accuracy
 
-✅ **Verified against official CrowdStrike Bicep templates**
-✅ **All resources accounted for** (per subscription, per region, scan-time)
-✅ **Conditional resource logic** (NAT Gateway, Public IP)
-✅ **Azure published pricing rates**
-✅ **Conservative estimates** (includes data transfer buffer)
+✅ **Verified against official CrowdStrike deployment templates**
+✅ **All resources and features accounted for**
+✅ **Shared vs. per-subscription infrastructure correctly modeled**
+✅ **Cloud provider published pricing rates**
+✅ **Conservative estimates with data transfer buffers**
 
-**Note**: This calculator provides estimates for infrastructure costs. Actual costs may vary based on:
-- Data volume scanned
-- Network egress patterns
-- **Azure region pricing variations** (calculator uses US East pricing)
-- Specific subscription agreements
+**Important Notes:**
+- Estimates are for infrastructure costs only
+- Actual costs may vary based on:
+  - Data volume and log generation rates
+  - Network egress patterns
+  - Regional pricing variations
+  - Specific cloud provider agreements
+  - Free tier eligibility (AWS/GCP)
 
-For production cost planning, contact your CrowdStrike Technical Account Manager.
+For production cost planning and optimization guidance, contact your CrowdStrike Technical Account Manager.
+
+## 🤝 Contributing
+
+Contributions welcome! To update pricing or add features:
+
+1. Update relevant pricing JSON files
+2. Modify feature calculators in `index.html`
+3. Test calculations thoroughly
+4. Submit pull request
 
 ## 📄 License
 
@@ -221,4 +243,4 @@ MIT License - See LICENSE file for details
 
 ---
 
-*This tool is not officially affiliated with or endorsed by CrowdStrike. Resource deployment details are based on publicly available Bicep templates and documentation.*
+*This tool is not officially affiliated with or endorsed by CrowdStrike, Microsoft Azure, Amazon Web Services, or Google Cloud Platform. Resource deployment details are based on publicly available templates and documentation.*

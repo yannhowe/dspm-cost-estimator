@@ -27,17 +27,29 @@ echo "Fetching Standard_F8s_v2 VM pricing..."
 VM_PRICE=$(curl -s "https://prices.azure.com/api/retail/prices?\$filter=serviceName%20eq%20'Virtual%20Machines'%20and%20armRegionName%20eq%20'eastus'%20and%20priceType%20eq%20'Consumption'" | \
   jq -r '.Items[] | select(.armSkuName == "Standard_F8s_v2") | select(.productName | contains("Windows") | not) | .retailPrice' | head -1)
 
+# Fetch Event Hub namespace pricing
+echo "Fetching Event Hubs namespace pricing..."
+EVENT_HUB_NAMESPACE=$(curl -s "https://prices.azure.com/api/retail/prices?\$filter=serviceName%20eq%20'Event%20Hubs'%20and%20armRegionName%20eq%20'eastus'%20and%20priceType%20eq%20'Consumption'" | \
+  jq -r '.Items[] | select(.skuName == "Standard") | select(.productName | contains("Namespace")) | .retailPrice' | head -1)
+
+# Fetch Event Hub throughput unit pricing
+echo "Fetching Event Hubs throughput unit pricing..."
+EVENT_HUB_TU=$(curl -s "https://prices.azure.com/api/retail/prices?\$filter=serviceName%20eq%20'Event%20Hubs'%20and%20armRegionName%20eq%20'eastus'%20and%20priceType%20eq%20'Consumption'" | \
+  jq -r '.Items[] | select(.skuName == "Standard") | select(.productName | contains("Throughput")) | .retailPrice' | head -1)
+
 echo ""
 echo "Retrieved Pricing:"
 echo "  Private Endpoint: \$$PRIVATE_ENDPOINT/hour"
 echo "  NAT Gateway: \$$NAT_GATEWAY/hour"
 echo "  Public IP: \$$PUBLIC_IP/hour"
 echo "  VM Standard_F8s_v2: \$$VM_PRICE/hour"
+echo "  Event Hub Namespace: \$$EVENT_HUB_NAMESPACE/hour"
+echo "  Event Hub TU: \$$EVENT_HUB_TU/hour"
 
 # Update the JSON file
 CURRENT_DATE=$(date +%Y-%m-%d)
 
-cat > azure-pricing.json <<EOF
+cat > pricing/azure-pricing.json <<EOF
 {
   "lastUpdated": "$CURRENT_DATE",
   "region": "East US",
@@ -101,11 +113,51 @@ cat > azure-pricing.json <<EOF
       "pricePerGB": 0.045,
       "unitOfMeasure": "1 GB",
       "source": "https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/"
+    },
+    "eventHubNamespace": {
+      "service": "Event Hubs",
+      "product": "Standard Namespace",
+      "pricePerHour": ${EVENT_HUB_NAMESPACE:-0.011},
+      "unitOfMeasure": "1 Hour",
+      "note": "Base cost for Event Hubs namespace (shared across all subscriptions)",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/event-hubs/"
+    },
+    "eventHubThroughputUnit": {
+      "service": "Event Hubs",
+      "product": "Throughput Unit",
+      "pricePerHour": ${EVENT_HUB_TU:-0.015},
+      "unitOfMeasure": "1 Hour per TU",
+      "note": "1-20 TU configurable, shared across all subscriptions",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/event-hubs/"
+    },
+    "storageAccount": {
+      "service": "Storage Accounts",
+      "product": "General Purpose v2 - LRS",
+      "pricePerMonth": 5.0,
+      "unitOfMeasure": "Per account",
+      "note": "For Function logs (legacy registrations only)",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/storage/"
+    },
+    "diagnosticSettings": {
+      "service": "Azure Monitor",
+      "product": "Diagnostic Settings",
+      "pricePerHour": 0,
+      "unitOfMeasure": "Free",
+      "note": "No charge for diagnostic settings configuration",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/monitor/"
+    },
+    "rbacRole": {
+      "service": "Azure RBAC",
+      "product": "Custom Role",
+      "pricePerHour": 0,
+      "unitOfMeasure": "Free",
+      "note": "No charge for RBAC roles",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/active-directory/"
     }
   }
 }
 EOF
 
 echo ""
-echo "✓ azure-pricing.json updated successfully!"
+echo "✓ pricing/azure-pricing.json updated successfully!"
 echo "  Last updated: $CURRENT_DATE"

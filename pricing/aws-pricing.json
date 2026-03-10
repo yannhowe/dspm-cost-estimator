@@ -1,0 +1,97 @@
+{
+  "lastUpdated": "2026-03-10",
+  "provider": "aws",
+  "region": "us-east-1",
+  "currency": "USD",
+  "note": "Prices based on AWS US East (N. Virginia) region. Update periodically using update-aws-pricing.sh script.",
+  "pricing": {
+    "iamRole": {
+      "service": "IAM",
+      "product": "IAM Role",
+      "pricePerMonth": 0,
+      "unitOfMeasure": "Free",
+      "note": "No charge for IAM roles",
+      "source": "https://aws.amazon.com/iam/pricing/"
+    },
+    "cloudTrail": {
+      "service": "CloudTrail",
+      "product": "Management Events",
+      "pricePerTrail": 2.00,
+      "unitOfMeasure": "Per trail per region",
+      "note": "First copy is $2/month per region",
+      "source": "https://aws.amazon.com/cloudtrail/pricing/"
+    },
+    "s3Storage": {
+      "service": "S3",
+      "product": "Standard Storage",
+      "pricePerGB": 0.023,
+      "unitOfMeasure": "Per GB per month",
+      "note": "For CloudTrail logs storage",
+      "source": "https://aws.amazon.com/s3/pricing/"
+    },
+    "eventBridge": {
+      "service": "EventBridge",
+      "product": "Custom Events",
+      "pricePerMillionEvents": 1.00,
+      "unitOfMeasure": "Per million events",
+      "note": "For real-time event monitoring",
+      "source": "https://aws.amazon.com/eventbridge/pricing/"
+    },
+    "sqs": {
+      "service": "SQS",
+      "product": "Standard Queue",
+      "pricePerMillionRequests": 0.40,
+      "unitOfMeasure": "Per million requests",
+      "note": "For event queue processing",
+      "source": "https://aws.amazon.com/sqs/pricing/"
+    },
+    "lambda": {
+      "service": "Lambda",
+      "product": "Function Invocations",
+      "pricePerMillionInvocations": 0.20,
+      "unitOfMeasure": "Per million invocations",
+      "note": "For DSPM scanning functions",
+      "source": "https://aws.amazon.com/lambda/pricing/"
+    },
+    "lambdaDuration": {
+      "service": "Lambda",
+      "product": "Duration (x86)",
+      "pricePerGBSecond": 0.0000166667,
+      "unitOfMeasure": "Per GB-second",
+      "note": "Compute time for Lambda functions",
+      "source": "https://aws.amazon.com/lambda/pricing/"
+    },
+    "kmsKey": {
+      "service": "KMS",
+      "product": "Customer Managed Key",
+      "pricePerMonth": 1.00,
+      "unitOfMeasure": "Per key per month",
+      "note": "For encryption keys",
+      "source": "https://aws.amazon.com/kms/pricing/"
+    },
+    "natGateway": {
+      "service": "VPC",
+      "product": "NAT Gateway",
+      "pricePerHour": 0.045,
+      "unitOfMeasure": "Per hour",
+      "note": "Optional for DSPM",
+      "source": "https://aws.amazon.com/vpc/pricing/"
+    },
+    "natGatewayDataProcessing": {
+      "service": "VPC",
+      "product": "NAT Gateway Data Processing",
+      "pricePerGB": 0.045,
+      "unitOfMeasure": "Per GB",
+      "note": "Data processed through NAT Gateway",
+      "source": "https://aws.amazon.com/vpc/pricing/"
+    },
+    "dataTransfer": {
+      "service": "EC2",
+      "product": "Data Transfer Out",
+      "pricePerGB": 0.09,
+      "unitOfMeasure": "Per GB",
+      "note": "First 100 GB/month to internet",
+      "source": "https://aws.amazon.com/ec2/pricing/on-demand/"
+    }
+  }
+}

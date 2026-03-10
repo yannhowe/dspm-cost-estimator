@@ -1,0 +1,86 @@
+{
+  "lastUpdated": "2026-03-10",
+  "provider": "gcp",
+  "region": "us-east1",
+  "currency": "USD",
+  "note": "Prices based on GCP us-east1 region. Update periodically using update-gcp-pricing.sh script.",
+  "pricing": {
+    "serviceAccount": {
+      "service": "IAM",
+      "product": "Service Account",
+      "pricePerMonth": 0,
+      "unitOfMeasure": "Free",
+      "note": "No charge for service accounts",
+      "source": "https://cloud.google.com/iam/pricing"
+    },
+    "cloudLogging": {
+      "service": "Cloud Logging",
+      "product": "Log Ingestion",
+      "pricePerGB": 0.50,
+      "unitOfMeasure": "Per GB",
+      "note": "After 50 GB free tier per project per month",
+      "freeTierGB": 50,
+      "source": "https://cloud.google.com/stackdriver/pricing"
+    },
+    "pubSub": {
+      "service": "Pub/Sub",
+      "product": "Message Delivery",
+      "pricePerGB": 0.06,
+      "unitOfMeasure": "Per GB",
+      "note": "After 10 GB free tier per month",
+      "freeTierGB": 10,
+      "source": "https://cloud.google.com/pubsub/pricing"
+    },
+    "cloudFunctions": {
+      "service": "Cloud Functions",
+      "product": "Invocations",
+      "pricePerMillionInvocations": 0.40,
+      "unitOfMeasure": "Per million invocations",
+      "note": "After 2 million free invocations per month",
+      "freeTierInvocations": 2000000,
+      "source": "https://cloud.google.com/functions/pricing"
+    },
+    "cloudFunctionsCompute": {
+      "service": "Cloud Functions",
+      "product": "Compute Time",
+      "pricePerGBSecond": 0.0000025,
+      "unitOfMeasure": "Per GB-second",
+      "note": "After 400,000 GB-seconds free tier per month",
+      "freeTierGBSeconds": 400000,
+      "source": "https://cloud.google.com/functions/pricing"
+    },
+    "cloudStorage": {
+      "service": "Cloud Storage",
+      "product": "Standard Storage",
+      "pricePerGB": 0.020,
+      "unitOfMeasure": "Per GB per month",
+      "note": "For logs and data storage",
+      "source": "https://cloud.google.com/storage/pricing"
+    },
+    "cloudNAT": {
+      "service": "Cloud NAT",
+      "product": "NAT Gateway",
+      "pricePerHour": 0.044,
+      "unitOfMeasure": "Per hour per gateway",
+      "note": "Optional for DSPM",
+      "source": "https://cloud.google.com/nat/pricing"
+    },
+    "cloudNATDataProcessing": {
+      "service": "Cloud NAT",
+      "product": "Data Processing",
+      "pricePerGB": 0.045,
+      "unitOfMeasure": "Per GB",
+      "note": "Data processed through NAT gateway",
+      "source": "https://cloud.google.com/nat/pricing"
+    },
+    "dataTransfer": {
+      "service": "Networking",
+      "product": "Internet Egress",
+      "pricePerGB": 0.12,
+      "unitOfMeasure": "Per GB",
+      "note": "After 1 GB free tier per month (Worldwide destinations, excluding China and Australia)",
+      "freeTierGB": 1,
+      "source": "https://cloud.google.com/vpc/network-pricing"
+    }
+  }
+}

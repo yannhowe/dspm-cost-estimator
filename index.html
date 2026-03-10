@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CrowdStrike DSPM Cost Estimator for Azure</title>
+    <title>CrowdStrike Multi-Cloud Cost Calculator</title>
     <style>
         * {
             margin: 0;
@@ -319,16 +319,157 @@
                 width: 100%;
             }
         }
+
+        /* Tab Navigation Styles */
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 0 30px;
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            margin-bottom: -2px;
+        }
+
+        .tab:hover {
+            color: #EC0000;
+            background: rgba(236, 0, 0, 0.05);
+        }
+
+        .tab.active {
+            color: #EC0000;
+            border-bottom-color: #EC0000;
+            background: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Feature Card Styles */
+        .feature-card {
+            background: #f9f9f9;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card.enabled {
+            border-color: #EC0000;
+            background: #fff5f5;
+        }
+
+        .feature-card h3 {
+            font-size: 18px;
+            color: #000;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feature-card p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .feature-card input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .feature-card input[type="checkbox"]:disabled {
+            cursor: not-allowed;
+        }
+
+        .feature-config {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🛡️ CrowdStrike DSPM Cost Estimator for Azure</h1>
-            <p>Estimate monthly costs for Data Security Posture Management scanning in your Azure environment</p>
+            <h1>🛡️ CrowdStrike Cloud Security Cost Calculator</h1>
+            <p>Estimate infrastructure costs for Falcon Cloud Security across Azure, AWS, and GCP</p>
         </div>
 
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab active" data-tab="azure">Azure</button>
+            <button class="tab" data-tab="aws">AWS</button>
+            <button class="tab" data-tab="gcp">GCP</button>
+        </div>
+
+        <!-- Azure Tab Content -->
+        <div id="azure-content" class="tab-content active">
         <div class="content">
+            <!-- Feature Selection Section -->
+            <div class="section">
+                <h2>Feature Selection</h2>
+                <p style="margin-bottom: 20px; color: #666;">Select which CrowdStrike Cloud Security features you want to estimate costs for:</p>
+
+                <!-- IOMs Feature -->
+                <div class="feature-card enabled" id="feature-ioms">
+                    <h3>
+                        <input type="checkbox" id="azure-ioms" checked disabled>
+                        <span>Indicators of Misconfiguration (IOMs)</span>
+                    </h3>
+                    <p>Asset inventory and configuration compliance monitoring. Always enabled for registered subscriptions.</p>
+                    <p><strong>Cost:</strong> Free (Virtual Networks and RBAC roles have no charge)</p>
+                </div>
+
+                <!-- Real-time Visibility Feature -->
+                <div class="feature-card" id="feature-rtv">
+                    <h3>
+                        <input type="checkbox" id="azure-rtv">
+                        <span>Real-time Visibility & Detection</span>
+                    </h3>
+                    <p>Event-driven monitoring using Event Hubs for IOA (Indicator of Attack) detection.</p>
+                    <div class="feature-config" id="azure-rtv-config" style="display: none;">
+                        <div class="form-field">
+                            <label for="azure-rtv-throughput">Event Hub Throughput Units (1-20)</label>
+                            <input type="number" id="azure-rtv-throughput" min="1" max="20" value="2" placeholder="Enter throughput units">
+                            <small>Shared infrastructure cost. May need adjustment based on total log volume across all subscriptions.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DSPM Feature -->
+                <div class="feature-card" id="feature-dspm">
+                    <h3>
+                        <input type="checkbox" id="azure-dspm">
+                        <span>Data Security Posture Management (DSPM)</span>
+                    </h3>
+                    <p>Sensitive data scanning and classification across storage resources.</p>
+                    <div class="feature-config" id="azure-dspm-config" style="display: none;">
+                        <div class="checkbox-group" style="margin-top: 15px;">
+                            <input type="checkbox" id="includeNatGateway" checked>
+                            <label for="includeNatGateway">Include NAT Gateway costs (uncheck if using alternative network configuration)</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Configuration Section -->
             <div class="section">
                 <h2>Environment Configuration</h2>
@@ -336,25 +477,20 @@
                     <div class="form-field">
                         <label for="subscriptions">Number of Azure Subscriptions</label>
                         <input type="number" id="subscriptions" min="1" value="1" placeholder="Enter number of subscriptions">
-                        <small>DSPM-enabled Azure subscriptions</small>
+                        <small>Registered Azure subscriptions</small>
                     </div>
 
                     <div class="form-field">
-                        <label for="regions">Number of Regions per Subscription</label>
+                        <label for="regions">Number of Regions per Subscription (DSPM only)</label>
                         <input type="number" id="regions" min="1" value="2" placeholder="Enter number of regions">
                         <small>Regions where DSPM scanning will occur</small>
                     </div>
                 </div>
-
-                <div class="checkbox-group">
-                    <input type="checkbox" id="includeNatGateway" checked>
-                    <label for="includeNatGateway">Include NAT Gateway costs (uncheck if using alternative DSPM network configuration)</label>
-                </div>
             </div>
 
-            <!-- Scanning Frequency Section -->
-            <div class="section">
-                <h2>Scanning Configuration</h2>
+            <!-- Scanning Frequency Section (DSPM only) -->
+            <div class="section" id="dspm-scan-config" style="display: none;">
+                <h2>DSPM Scanning Configuration</h2>
                 <div class="input-group">
                     <div class="form-field">
                         <label for="scanFrequency">Scan Frequency</label>
@@ -398,6 +534,12 @@
                     <div class="cost-card">
                         <h3>Estimated Monthly Cost</h3>
                         <div class="amount" id="totalCost">$0.00</div>
+                    </div>
+
+                    <!-- Feature Summary -->
+                    <div id="featureSummary" style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #EC0000; border-radius: 4px;">
+                        <h3>Enabled Features:</h3>
+                        <p>Calculate costs to see feature breakdown</p>
                     </div>
 
                     <div class="breakdown">
@@ -526,6 +668,30 @@
                 </div>
             </div>
         </div>
+        </div>
+        <!-- End Azure Tab Content -->
+
+        <!-- AWS Tab Content -->
+        <div id="aws-content" class="tab-content">
+        <div class="content">
+            <div class="section">
+                <h2>AWS Cost Calculator - Coming Soon</h2>
+                <p>AWS cost estimation features will be available soon.</p>
+            </div>
+        </div>
+        </div>
+        <!-- End AWS Tab Content -->
+
+        <!-- GCP Tab Content -->
+        <div id="gcp-content" class="tab-content">
+        <div class="content">
+            <div class="section">
+                <h2>GCP Cost Calculator - Coming Soon</h2>
+                <p>GCP cost estimation features will be available soon.</p>
+            </div>
+        </div>
+        </div>
+        <!-- End GCP Tab Content -->
 
         <div class="footer">
             <p>CrowdStrike DSPM Cost Estimator | Pricing based on Azure US East region rates (<span id="lastUpdated">2026-02-25</span>)</p>
@@ -540,7 +706,7 @@
         // Load pricing from JSON file
         async function loadPricingData() {
             try {
-                const response = await fetch('azure-pricing.json');
+                const response = await fetch('pricing/azure-pricing.json');
                 pricingData = await response.json();
                 console.log(`Pricing data loaded (last updated: ${pricingData.lastUpdated})`);
             } catch (error) {
@@ -573,6 +739,105 @@
             'weekly': 'Weekly (4 scans per month)'
         };
 
+        // Feature Cost Calculators
+        const FeatureCalculators = {
+            azure: {
+                calculateIOMs(config, pricing) {
+                    // IOMs uses Virtual Network and RBAC roles - both free
+                    return {
+                        total: 0,
+                        resources: {
+                            virtualNetwork: 0,
+                            rbacRole: 0
+                        },
+                        details: 'Virtual Networks and RBAC custom roles have no charge'
+                    };
+                },
+
+                calculateRealtimeVisibility(config, pricing) {
+                    if (!config.features.realtimeVisibility.enabled) {
+                        return { total: 0, resources: {}, details: 'Feature not enabled' };
+                    }
+
+                    const throughputUnits = config.features.realtimeVisibility.throughputUnits || 2;
+
+                    // Event Hub namespace base cost (SHARED across all subscriptions)
+                    const namespaceBase = pricing.eventHubNamespace.pricePerHour * 730; // ~$8.03/month
+
+                    // Throughput units cost (SHARED, configurable)
+                    const throughputCost = throughputUnits * pricing.eventHubThroughputUnit.pricePerHour * 730;
+
+                    // Storage accounts for logs (legacy registrations only, shared)
+                    const storageCost = pricing.storageAccount.pricePerMonth || 5.0;
+
+                    // Total is shared infrastructure cost
+                    const totalShared = namespaceBase + throughputCost + storageCost;
+
+                    return {
+                        total: totalShared,
+                        resources: {
+                            eventHubNamespace: namespaceBase,
+                            throughputUnits: throughputCost,
+                            storageAccount: storageCost,
+                            diagnosticSettings: 0 // Free
+                        },
+                        details: `Shared infrastructure for ${config.subscriptions} subscription(s). Includes ${throughputUnits} throughput unit(s). May need adjustment based on total log volume.`
+                    };
+                },
+
+                calculateDSPM(config, pricing) {
+                    if (!config.features.dspm.enabled) {
+                        return { total: 0, resources: {}, details: 'Feature not enabled' };
+                    }
+
+                    const subscriptions = config.subscriptions;
+                    const regions = config.regions;
+                    const includeNatGateway = config.features.dspm.includeNatGateway;
+                    const scanFrequency = config.features.dspm.scanFrequency || 'quarterly';
+                    const scanDuration = config.features.dspm.scanDuration || 4;
+                    const scansPerMonth = scanFrequencyMap[scanFrequency];
+
+                    // Key Vault costs (negligible)
+                    const secretReadsPerMonth = scansPerMonth * subscriptions * regions;
+                    const keyVaultCost = (secretReadsPerMonth / 10000) * 0.03;
+
+                    // Per region per subscription costs (24/7 resources)
+                    const privateEndpointCost = pricing.privateEndpoint.pricePerHour * subscriptions * regions * 730;
+                    const natGatewayCost = includeNatGateway ? (pricing.natGateway.pricePerHour * subscriptions * regions * 730) : 0;
+                    const publicIpCost = includeNatGateway ? (pricing.publicIp.pricePerHour * subscriptions * regions * 730) : 0;
+                    const vnetCost = 0; // Free
+
+                    // VM costs (only during scans)
+                    const vmHoursPerMonth = scanDuration * scansPerMonth * subscriptions * regions;
+                    const vmCost = pricing.virtualMachine.pricePerHour * vmHoursPerMonth;
+
+                    // Data transfer costs
+                    const metadataPerScanGB = 0.5;
+                    const totalScans = scansPerMonth * subscriptions * regions;
+                    const metadataUploadCost = totalScans * metadataPerScanGB * (pricing.bandwidth?.pricePerGB || 0.087);
+                    const natGatewayDataCost = includeNatGateway ?
+                        (totalScans * metadataPerScanGB * (pricing.natGatewayDataProcessing?.pricePerGB || 0.045)) : 0;
+                    const transferCost = metadataUploadCost + natGatewayDataCost;
+
+                    const total = keyVaultCost + vnetCost + privateEndpointCost + natGatewayCost +
+                                 publicIpCost + vmCost + transferCost;
+
+                    return {
+                        total: total,
+                        resources: {
+                            keyVault: keyVaultCost,
+                            virtualNetwork: vnetCost,
+                            privateEndpoint: privateEndpointCost,
+                            natGateway: natGatewayCost,
+                            publicIp: publicIpCost,
+                            virtualMachine: vmCost,
+                            dataTransfer: transferCost
+                        },
+                        details: `${subscriptions} subscription(s) × ${regions} region(s), ${scanFrequencyLabel[scanFrequency]}, ${scanDuration}h per scan`
+                    };
+                }
+            }
+        };
 
         async function calculateCost() {
             // Ensure pricing data is loaded
@@ -583,14 +848,21 @@
             // Get input values
             const subscriptions = parseInt(document.getElementById('subscriptions').value) || 1;
             const regions = parseInt(document.getElementById('regions').value) || 1;
-            const includeNatGateway = document.getElementById('includeNatGateway').checked;
-            const scanFrequency = document.getElementById('scanFrequency').value;
-            const scanDuration = parseInt(document.getElementById('scanDuration').value) || 4;
+
+            // Get feature selections
+            const iomsEnabled = document.getElementById('azure-ioms').checked;
+            const rtvEnabled = document.getElementById('azure-rtv').checked;
+            const dspmEnabled = document.getElementById('azure-dspm').checked;
 
             // Validate inputs
             if (subscriptions < 1 || regions < 1) {
                 showError('Please enter valid numbers for subscriptions and regions (minimum 1).');
                 return;
+            }
+
+            // Check if at least one feature is enabled (IOMs is always enabled)
+            if (!dspmEnabled && !rtvEnabled) {
+                // Only IOMs is enabled, show minimal cost
             }
 
             // Show loading
@@ -599,9 +871,6 @@
             document.getElementById('errorMessage').innerHTML = '';
 
             try {
-                // Calculate scans per month
-                const scansPerMonth = scanFrequencyMap[scanFrequency];
-
                 // Validate reasonable limits
                 if (subscriptions > 10000) {
                     showError('Number of subscriptions seems unusually high. Please verify your input. For very large deployments, contact your CrowdStrike Technical Account Manager for accurate cost estimation.');
@@ -609,101 +878,125 @@
                     return;
                 }
 
-                // Get prices from loaded pricing data
+                // Build config object
+                const config = {
+                    subscriptions: subscriptions,
+                    regions: regions,
+                    features: {
+                        ioms: {
+                            enabled: iomsEnabled
+                        },
+                        realtimeVisibility: {
+                            enabled: rtvEnabled,
+                            throughputUnits: rtvEnabled ? (parseInt(document.getElementById('azure-rtv-throughput').value) || 2) : 0
+                        },
+                        dspm: {
+                            enabled: dspmEnabled,
+                            includeNatGateway: dspmEnabled ? document.getElementById('includeNatGateway').checked : false,
+                            scanFrequency: dspmEnabled ? document.getElementById('scanFrequency').value : 'quarterly',
+                            scanDuration: dspmEnabled ? (parseInt(document.getElementById('scanDuration').value) || 4) : 4
+                        }
+                    }
+                };
+
+                console.log('Calculating costs with config:', config);
                 console.log('Using pricing data from:', pricingData.lastUpdated);
-                const vnetPrice = 0; // Virtual Network is free
-                const privateEndpointPrice = pricingData.pricing.privateEndpoint.pricePerHour;
-                const natGatewayPrice = includeNatGateway ? pricingData.pricing.natGateway.pricePerHour : 0;
-                const publicIpPrice = pricingData.pricing.publicIp.pricePerHour;
-                const vmHourlyPrice = pricingData.pricing.virtualMachine.pricePerHour;
 
-                console.log('Pricing data:', { privateEndpointPrice, natGatewayPrice, publicIpPrice, vmHourlyPrice });
+                // Calculate costs for each feature
+                const iomsResult = FeatureCalculators.azure.calculateIOMs(config, pricingData.pricing);
+                const rtvResult = FeatureCalculators.azure.calculateRealtimeVisibility(config, pricingData.pricing);
+                const dspmResult = FeatureCalculators.azure.calculateDSPM(config, pricingData.pricing);
 
-                // Calculate monthly costs
-                // Per subscription costs
-                // Key Vault: Standard tier has no base fee, only transaction costs
-                // Each scanner VM reads secrets once per scan
-                // Cost: $0.03 per 10,000 secret operations
-                const secretReadsPerMonth = scansPerMonth * subscriptions * regions; // VMs read secrets at scan start
-                const keyVaultMonthlyCost = (secretReadsPerMonth / 10000) * 0.03; // Negligible cost
+                // Calculate totals
+                const totalMonthlyCost = iomsResult.total + rtvResult.total + dspmResult.total;
 
-                // Per region per subscription costs (24/7 resources)
-                const privateEndpointMonthlyCost = privateEndpointPrice * subscriptions * regions * 730; // 730 hours/month
-                const natGatewayMonthlyCost = natGatewayPrice * subscriptions * regions * 730;
-                // Public IP is only deployed when NAT Gateway is enabled (conditional resource)
-                const publicIpMonthlyCost = includeNatGateway ? (publicIpPrice * subscriptions * regions * 730) : 0;
-                const vnetMonthlyCost = vnetPrice * subscriptions * regions;
+                console.log('Cost breakdown:', { iomsResult, rtvResult, dspmResult, totalMonthlyCost });
 
-                // VM costs (only during scans)
-                const vmHoursPerMonth = scanDuration * scansPerMonth * subscriptions * regions;
-                const vmMonthlyCost = vmHourlyPrice * vmHoursPerMonth;
-
-                // Data transfer costs (minimal - only metadata, not actual data)
-                // Scanner reads Blob Storage in same region (FREE intra-region transfer)
-                // Only metadata/findings sent to CrowdStrike cloud (~0.5 GB per scan)
-                // Outbound internet: $0.087/GB for first 100 GB
-                // NAT Gateway processing: $0.045/GB (if enabled)
-                const metadataPerScanGB = 0.5; // ~500 MB of scan findings/metadata per subscription per region
-                const azureBandwidthCostPerGB = 0.087; // First 100 GB/month tier
-                const natGatewayProcessingCostPerGB = 0.045;
-
-                const totalScans = scansPerMonth * subscriptions * regions;
-                const metadataUploadCost = totalScans * metadataPerScanGB * azureBandwidthCostPerGB;
-                const natGatewayDataProcessingCost = includeNatGateway ?
-                    (totalScans * metadataPerScanGB * natGatewayProcessingCostPerGB) : 0;
-
-                const transferMonthlyCost = metadataUploadCost + natGatewayDataProcessingCost;
-
-                // Total
-                const totalMonthlyCost = keyVaultMonthlyCost + vnetMonthlyCost + privateEndpointMonthlyCost +
-                                        natGatewayMonthlyCost + publicIpMonthlyCost + vmMonthlyCost + transferMonthlyCost;
-
-                // Update UI
+                // Update UI - Total Cost
                 document.getElementById('totalCost').textContent = `$${totalMonthlyCost.toFixed(2)}`;
-                document.getElementById('keyVaultCost').textContent = `$${keyVaultMonthlyCost.toFixed(2)}`;
-                document.getElementById('vnetCost').textContent = `$${vnetMonthlyCost.toFixed(2)}`;
-                document.getElementById('privateEndpointCost').textContent = `$${privateEndpointMonthlyCost.toFixed(2)}`;
-                document.getElementById('natGatewayCost').textContent = `$${natGatewayMonthlyCost.toFixed(2)}`;
-                document.getElementById('publicIpCost').textContent = `$${publicIpMonthlyCost.toFixed(2)}`;
-                document.getElementById('vmCost').textContent = `$${vmMonthlyCost.toFixed(2)}`;
-                document.getElementById('transferCost').textContent = `$${transferMonthlyCost.toFixed(2)}`;
+
+                // Update individual resource costs (combined from all features)
+                const combinedResources = {
+                    keyVault: (dspmResult.resources.keyVault || 0),
+                    virtualNetwork: (iomsResult.resources.virtualNetwork || 0) + (dspmResult.resources.virtualNetwork || 0),
+                    privateEndpoint: (dspmResult.resources.privateEndpoint || 0),
+                    natGateway: (dspmResult.resources.natGateway || 0),
+                    publicIp: (dspmResult.resources.publicIp || 0),
+                    virtualMachine: (dspmResult.resources.virtualMachine || 0),
+                    dataTransfer: (dspmResult.resources.dataTransfer || 0),
+                    eventHubNamespace: (rtvResult.resources.eventHubNamespace || 0),
+                    throughputUnits: (rtvResult.resources.throughputUnits || 0),
+                    storageAccount: (rtvResult.resources.storageAccount || 0)
+                };
+
+                document.getElementById('keyVaultCost').textContent = `$${combinedResources.keyVault.toFixed(2)}`;
+                document.getElementById('vnetCost').textContent = `$${combinedResources.virtualNetwork.toFixed(2)}`;
+                document.getElementById('privateEndpointCost').textContent = `$${combinedResources.privateEndpoint.toFixed(2)}`;
+                document.getElementById('natGatewayCost').textContent = `$${combinedResources.natGateway.toFixed(2)}`;
+                document.getElementById('publicIpCost').textContent = `$${combinedResources.publicIp.toFixed(2)}`;
+                document.getElementById('vmCost').textContent = `$${combinedResources.virtualMachine.toFixed(2)}`;
+                document.getElementById('transferCost').textContent = `$${combinedResources.dataTransfer.toFixed(2)}`;
                 document.getElementById('totalBreakdown').textContent = `$${totalMonthlyCost.toFixed(2)}`;
 
-                // Update details
-                const scanFrequencyText = scanFrequencyLabel[scanFrequency];
-
-                // Update pricing details from API
+                // Update pricing details from pricing data
                 document.getElementById('privateEndpointPriceDetail').textContent =
-                    `$${privateEndpointPrice.toFixed(4)}/hour in ${location}`;
+                    `$${pricingData.pricing.privateEndpoint.pricePerHour.toFixed(4)}/hour in ${pricingData.region}`;
                 document.getElementById('natGatewayPriceDetail').textContent =
-                    `$${natGatewayPrice.toFixed(4)}/hour in ${location}`;
+                    `$${pricingData.pricing.natGateway.pricePerHour.toFixed(4)}/hour in ${pricingData.region}`;
                 document.getElementById('publicIpPriceDetail').textContent =
-                    `$${publicIpPrice.toFixed(4)}/hour in ${location}`;
+                    `$${pricingData.pricing.publicIp.pricePerHour.toFixed(4)}/hour in ${pricingData.region}`;
                 document.getElementById('vmPriceDetail').textContent =
-                    `$${vmHourlyPrice.toFixed(4)}/hour in ${location}`;
+                    `$${pricingData.pricing.virtualMachine.pricePerHour.toFixed(4)}/hour in ${pricingData.region}`;
 
                 // Update cost assumption details
+                const dspmScanFrequency = config.features.dspm.scanFrequency;
+                const dspmScanDuration = config.features.dspm.scanDuration;
+                const scansPerMonth = scanFrequencyMap[dspmScanFrequency] || 0;
+                const secretReadsPerMonth = scansPerMonth * subscriptions * regions;
+                const vmHoursPerMonth = dspmScanDuration * scansPerMonth * subscriptions * regions;
+
                 document.getElementById('keyVaultDetail').textContent =
-                    `${secretReadsPerMonth.toFixed(1)} secret reads/month ÷ 10,000 × $0.03 (${subscriptions} Key Vaults deployed)`;
+                    dspmEnabled ?
+                    `${secretReadsPerMonth.toFixed(1)} secret reads/month ÷ 10,000 × $0.03 (${subscriptions} Key Vaults deployed)` :
+                    'DSPM not enabled';
+
                 document.getElementById('networkDetail').textContent =
                     `${subscriptions} subscription(s) × ${regions} region(s) × 730 hrs/month (always-on resources)`;
 
                 // Show actual scan count based on frequency
                 let scanDescription = '';
-                if (scanFrequency === 'quarterly') {
-                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (1 scan per quarter: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions ÷ 3 months)`;
-                } else if (scanFrequency === 'monthly') {
-                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (1 scan per month: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions)`;
-                } else if (scanFrequency === 'biweekly') {
-                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (2 scans per month: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions × 2)`;
-                } else if (scanFrequency === 'weekly') {
-                    scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (4 scans per month: ${scanDuration} hrs × ${subscriptions} subs × ${regions} regions × 4)`;
+                if (dspmEnabled) {
+                    if (dspmScanFrequency === 'quarterly') {
+                        scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (1 scan per quarter: ${dspmScanDuration} hrs × ${subscriptions} subs × ${regions} regions ÷ 3 months)`;
+                    } else if (dspmScanFrequency === 'monthly') {
+                        scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (1 scan per month: ${dspmScanDuration} hrs × ${subscriptions} subs × ${regions} regions)`;
+                    } else if (dspmScanFrequency === 'biweekly') {
+                        scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (2 scans per month: ${dspmScanDuration} hrs × ${subscriptions} subs × ${regions} regions × 2)`;
+                    } else if (dspmScanFrequency === 'weekly') {
+                        scanDescription = `${vmHoursPerMonth.toFixed(1)} VM hours/month (4 scans per month: ${dspmScanDuration} hrs × ${subscriptions} subs × ${regions} regions × 4)`;
+                    }
+                } else {
+                    scanDescription = 'DSPM not enabled';
                 }
                 document.getElementById('computeDetail').textContent = scanDescription;
 
                 // Toggle NAT Gateway and Public IP visibility (Public IP only deployed with NAT Gateway)
+                const includeNatGateway = config.features.dspm.includeNatGateway && dspmEnabled;
                 document.getElementById('natGatewayRow').style.display = includeNatGateway ? 'flex' : 'none';
                 document.getElementById('publicIpRow').style.display = includeNatGateway ? 'flex' : 'none';
+
+                // Add feature breakdown summary to results
+                let featureSummary = '<h3>Enabled Features:</h3><ul>';
+                if (iomsEnabled) featureSummary += `<li><strong>IOMs:</strong> $${iomsResult.total.toFixed(2)}/month - ${iomsResult.details}</li>`;
+                if (rtvEnabled) featureSummary += `<li><strong>Real-time Visibility:</strong> $${rtvResult.total.toFixed(2)}/month - ${rtvResult.details}</li>`;
+                if (dspmEnabled) featureSummary += `<li><strong>DSPM:</strong> $${dspmResult.total.toFixed(2)}/month - ${dspmResult.details}</li>`;
+                featureSummary += '</ul>';
+
+                // Insert feature summary if element exists
+                const summaryElement = document.getElementById('featureSummary');
+                if (summaryElement) {
+                    summaryElement.innerHTML = featureSummary;
+                }
 
                 // Hide loading, show results
                 document.getElementById('loading').style.display = 'none';
@@ -741,7 +1034,69 @@
             if (pricingData && pricingData.lastUpdated) {
                 document.getElementById('lastUpdated').textContent = pricingData.lastUpdated;
             }
+
+            // Initialize tab navigation
+            initTabNavigation();
+
+            // Initialize Azure feature toggles
+            initAzureFeatureToggles();
         });
+
+        // Azure Feature Toggle Manager
+        function initAzureFeatureToggles() {
+            const rtvCheckbox = document.getElementById('azure-rtv');
+            const rtvConfig = document.getElementById('azure-rtv-config');
+            const rtvCard = document.getElementById('feature-rtv');
+
+            const dspmCheckbox = document.getElementById('azure-dspm');
+            const dspmConfig = document.getElementById('azure-dspm-config');
+            const dspmScanConfig = document.getElementById('dspm-scan-config');
+            const dspmCard = document.getElementById('feature-dspm');
+
+            // Real-time Visibility toggle
+            rtvCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    rtvConfig.style.display = 'block';
+                    rtvCard.classList.add('enabled');
+                } else {
+                    rtvConfig.style.display = 'none';
+                    rtvCard.classList.remove('enabled');
+                }
+            });
+
+            // DSPM toggle
+            dspmCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    dspmConfig.style.display = 'block';
+                    dspmScanConfig.style.display = 'block';
+                    dspmCard.classList.add('enabled');
+                } else {
+                    dspmConfig.style.display = 'none';
+                    dspmScanConfig.style.display = 'none';
+                    dspmCard.classList.remove('enabled');
+                }
+            });
+        }
+
+        // Tab Navigation Manager
+        function initTabNavigation() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetTab = tab.getAttribute('data-tab');
+
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    // Add active class to clicked tab and corresponding content
+                    tab.classList.add('active');
+                    document.getElementById(`${targetTab}-content`).classList.add('active');
+                });
+            });
+        }
     </script>
 </body>
 </html>

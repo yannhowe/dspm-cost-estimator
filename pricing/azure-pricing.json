@@ -61,6 +61,46 @@
       "pricePerGB": 0.045,
       "unitOfMeasure": "1 GB",
       "source": "https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/"
+    },
+    "eventHubNamespace": {
+      "service": "Event Hubs",
+      "product": "Standard Namespace",
+      "pricePerHour": 0.011,
+      "unitOfMeasure": "1 Hour",
+      "note": "Base cost for Event Hubs namespace (shared across all subscriptions)",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/event-hubs/"
+    },
+    "eventHubThroughputUnit": {
+      "service": "Event Hubs",
+      "product": "Throughput Unit",
+      "pricePerHour": 0.015,
+      "unitOfMeasure": "1 Hour per TU",
+      "note": "1-20 TU configurable, shared across all subscriptions",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/event-hubs/"
+    },
+    "storageAccount": {
+      "service": "Storage Accounts",
+      "product": "General Purpose v2 - LRS",
+      "pricePerMonth": 5.0,
+      "unitOfMeasure": "Per account",
+      "note": "For Function logs (legacy registrations only)",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/storage/"
+    },
+    "diagnosticSettings": {
+      "service": "Azure Monitor",
+      "product": "Diagnostic Settings",
+      "pricePerHour": 0,
+      "unitOfMeasure": "Free",
+      "note": "No charge for diagnostic settings configuration",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/monitor/"
+    },
+    "rbacRole": {
+      "service": "Azure RBAC",
+      "product": "Custom Role",
+      "pricePerHour": 0,
+      "unitOfMeasure": "Free",
+      "note": "No charge for RBAC roles",
+      "source": "https://azure.microsoft.com/en-us/pricing/details/active-directory/"
     }
   }
 }
