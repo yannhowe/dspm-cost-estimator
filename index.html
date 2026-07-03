@@ -462,7 +462,19 @@
                     </h3>
                     <p>Sensitive data scanning and classification across storage resources.</p>
                     <div class="feature-config" id="azure-dspm-config" style="display: none;">
+                        <div class="form-field" style="margin-bottom: 15px;">
+                            <label for="dspmScanningMode">Scanning Infrastructure Mode</label>
+                            <select id="dspmScanningMode">
+                                <option value="per-account">Per-account scanning (infrastructure in every subscription)</option>
+                                <option value="cross-account">Cross-account scanning (infrastructure in host subscription only)</option>
+                            </select>
+                            <small>Cross-account scanning deploys scanner infrastructure only on a designated host subscription, reducing costs significantly for multi-subscription environments.</small>
+                        </div>
                         <div class="checkbox-group" style="margin-top: 15px;">
+                            <input type="checkbox" id="useOwnVnet">
+                            <label for="useOwnVnet">Use your own VNet (skip VNet/NAT Gateway/Public IP/NSG provisioning — cross-account only)</label>
+                        </div>
+                        <div class="checkbox-group" style="margin-top: 10px;">
                             <input type="checkbox" id="includeNatGateway" checked>
                             <label for="includeNatGateway">Include NAT Gateway costs (uncheck if using alternative network configuration)</label>
                         </div>
@@ -556,17 +568,17 @@
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Private Endpoint (per subscription per region)</span>
+                            <span class="label">Private Endpoint (per host subscription per region)</span>
                             <span class="value" id="privateEndpointCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="natGatewayRow">
-                            <span class="label">NAT Gateway (per subscription per region)</span>
+                            <span class="label">NAT Gateway (per host subscription per region)</span>
                             <span class="value" id="natGatewayCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="publicIpRow">
-                            <span class="label">Public IP (per subscription per region, only with NAT Gateway)</span>
+                            <span class="label">Public IP (per host subscription per region, only with NAT Gateway)</span>
                             <span class="value" id="publicIpCost">$0.00</span>
                         </div>
 
@@ -608,7 +620,12 @@
                             <li><strong>Compute Resources:</strong> <span id="computeDetail"></span></li>
                         </ul>
 
-                        <p style="margin-top: 10px;"><strong>Deployment Architecture:</strong> Each subscription gets 1 Key Vault (stores API credentials) and network infrastructure in each enabled region. Scanner VMs are created temporarily during scans and automatically deleted after completion.</p>
+                    <p style="margin-top: 10px;"><strong>Deployment Architecture:</strong></p>
+                        <ul>
+                            <li><strong>Per-account scanning:</strong> Each subscription gets its own Key Vault and network infrastructure in each enabled region. Scanner VMs are created temporarily during scans and automatically deleted after completion.</li>
+                            <li><strong>Cross-account scanning (NEW - April 2026):</strong> Scanner infrastructure is deployed only to a designated host subscription. The data scanner scans storage in other subscriptions remotely. Key Vaults are still deployed per subscription.</li>
+                            <li><strong>Use your own VNet (NEW - April 2026):</strong> For cross-account mode, you can bring an existing VNet instead of CrowdStrike provisioning VNet/NAT/Public IP/NSG, further reducing costs.</li>
+                        </ul>
                         <p style="margin-top: 10px;"><strong>Cost Averaging:</strong> VM costs represent actual scan hours. For quarterly scans, costs are averaged monthly for budgeting (e.g., 1 scan every 3 months = 1/3 of the scan cost per month on average).</p>
                         <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 always-on resources, billed at 730 hrs/month). Data transfer costs are minimal because scanners only upload metadata, and all data reading happens within the same region (free intra-region transfer).</p>
                     </div>
@@ -616,12 +633,13 @@
                     <div class="info-box" style="background: #d1ecf1; border-left-color: #0c5460;">
                         <h4>💡 Cost Optimization Tips</h4>
                         <ul>
+                            <li><strong>Use Cross-account scanning</strong> to deploy infrastructure only on a single host subscription — dramatically reduces always-on costs for multi-subscription environments</li>
+                            <li><strong>Bring your own VNet</strong> (cross-account mode) to skip VNet/NAT Gateway/Public IP/NSG provisioning entirely</li>
                             <li><strong>Remove NAT Gateway</strong> to save ~70% on infrastructure costs (see <a href="https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans#t13b00f2" target="_blank">network configuration options</a>)</li>
                             <li><strong>Without NAT Gateway:</strong> Scanner VMs use temporary public IPs during scans only (minimal cost)</li>
                             <li><strong>With NAT Gateway:</strong> Provides shared static IP for all scanners (higher cost but centralized)</li>
                             <li>Adjust scan frequency based on your compliance requirements (quarterly is default)</li>
                             <li>Limit scanning to specific regions where sensitive data resides</li>
-                            <li>Consolidate subscriptions when possible - each adds infrastructure overhead</li>
                         </ul>
                     </div>
 
@@ -649,12 +667,16 @@
                     <p>Performing DSPM scans results in a slight increase in cloud consumption costs. The exact amount varies based on the size of the environment and Azure's pricing structure.</p>
                     <p style="margin-top: 10px;"><strong>Resources provisioned by CrowdStrike DSPM:</strong></p>
                     <ul>
-                        <li><strong>Per Subscription:</strong> Azure Key Vault (1 per subscription, stores API credentials)</li>
-                        <li><strong>Per Subscription Per Region:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway enabled) - Each subscription gets isolated scanning infrastructure in each enabled region</li>
-                        <li><strong>At Scan Time:</strong> Azure VM Standard_F8s_v2 (temporary, auto-deleted after scan)</li>
+                        <li><strong>Per Subscription:</strong> Azure Key Vault (1 per subscription, stores API credentials), RBAC role definitions & assignments</li>
+                        <li><strong>Per Host Subscription Per Region:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway enabled). In per-account mode, each subscription is a host. In cross-account mode, only the designated host subscription.</li>
+                        <li><strong>At Scan Time:</strong> Azure VM Standard_F8s_v2 (temporary, auto-deleted after scan), OS Disk, Network Interface, NSG</li>
                         <li><strong>Transaction Costs:</strong> Key Vault secret operations (~$0.03/10k reads), data transfer (metadata only, no cross-region costs)</li>
                     </ul>
-                    <p style="margin-top: 10px;"><strong>Important:</strong> Each subscription gets its own isolated scanning environment. With 10 subscriptions × 1 region, you deploy 10 separate infrastructures, not 1 shared infrastructure. This is why costs scale with subscription count.</p>
+                    <p style="margin-top: 10px;"><strong>Scanning Modes (April 2026+):</strong></p>
+                    <ul>
+                        <li><strong>Per-account:</strong> Infrastructure in every subscription × region. Higher cost, full isolation per subscription.</li>
+                        <li><strong>Cross-account:</strong> Infrastructure only in host subscription × region. Scanner reaches into other subscriptions remotely. Significantly lower always-on costs.</li>
+                    </ul>
                     <p style="margin-top: 10px;"><strong>Official Azure Pricing References:</strong></p>
                     <ul>
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/key-vault/" target="_blank">Key Vault Pricing</a></li>
@@ -695,7 +717,7 @@
 
         <div class="footer">
             <p>CrowdStrike DSPM Cost Estimator | Pricing based on Azure US East region rates (<span id="lastUpdated">2026-02-25</span>)</p>
-            <p style="margin-top: 5px;">Reference: <a href="https://falcon.crowdstrike.com/documentation/page/jaf24dc6/dspm-cost-estimation" target="_blank">DSPM Cost Estimation Documentation</a></p>
+            <p style="margin-top: 5px;">Reference: <a href="https://docs.crowdstrike.com/r/ka120384" target="_blank">DSPM Cost Estimation Documentation</a> | <a href="https://docs.crowdstrike.com/r/rc171502" target="_blank">Infrastructure Options for Azure</a></p>
         </div>
     </div>
 
@@ -793,21 +815,35 @@
                     const subscriptions = config.subscriptions;
                     const regions = config.regions;
                     const includeNatGateway = config.features.dspm.includeNatGateway;
+                    const scanningMode = config.features.dspm.scanningMode || 'per-account';
+                    const useOwnVnet = config.features.dspm.useOwnVnet || false;
                     const scanFrequency = config.features.dspm.scanFrequency || 'quarterly';
                     const scanDuration = config.features.dspm.scanDuration || 4;
                     const scansPerMonth = scanFrequencyMap[scanFrequency];
 
-                    // Key Vault costs (negligible)
+                    // Determine infrastructure multiplier based on scanning mode
+                    // Per-account: infrastructure in every subscription
+                    // Cross-account: infrastructure only in host subscription (1)
+                    const infraSubscriptions = (scanningMode === 'cross-account') ? 1 : subscriptions;
+
+                    // Key Vault: 1 per DSPM-enabled subscription regardless of mode
                     const secretReadsPerMonth = scansPerMonth * subscriptions * regions;
                     const keyVaultCost = (secretReadsPerMonth / 10000) * 0.03;
 
-                    // Per region per subscription costs (24/7 resources)
-                    const privateEndpointCost = pricing.privateEndpoint.pricePerHour * subscriptions * regions * 730;
-                    const natGatewayCost = includeNatGateway ? (pricing.natGateway.pricePerHour * subscriptions * regions * 730) : 0;
-                    const publicIpCost = includeNatGateway ? (pricing.publicIp.pricePerHour * subscriptions * regions * 730) : 0;
-                    const vnetCost = 0; // Free
+                    // Network infrastructure costs (24/7 resources)
+                    // With "use your own VNet": VNet, NAT Gateway, Public IP, NSG are NOT provisioned
+                    // Private Endpoint for Key Vault is still provisioned per region
+                    const privateEndpointCost = pricing.privateEndpoint.pricePerHour * infraSubscriptions * regions * 730;
 
-                    // VM costs (only during scans)
+                    let natGatewayCost = 0;
+                    let publicIpCost = 0;
+                    if (!useOwnVnet && includeNatGateway) {
+                        natGatewayCost = pricing.natGateway.pricePerHour * infraSubscriptions * regions * 730;
+                        publicIpCost = pricing.publicIp.pricePerHour * infraSubscriptions * regions * 730;
+                    }
+                    const vnetCost = 0; // Free (Azure does not charge for VNet)
+
+                    // VM costs (only during scans) - scans still run for all subscriptions
                     const vmHoursPerMonth = scanDuration * scansPerMonth * subscriptions * regions;
                     const vmCost = pricing.virtualMachine.pricePerHour * vmHoursPerMonth;
 
@@ -815,12 +851,15 @@
                     const metadataPerScanGB = 0.5;
                     const totalScans = scansPerMonth * subscriptions * regions;
                     const metadataUploadCost = totalScans * metadataPerScanGB * (pricing.bandwidth?.pricePerGB || 0.087);
-                    const natGatewayDataCost = includeNatGateway ?
+                    const natGatewayDataCost = (!useOwnVnet && includeNatGateway) ?
                         (totalScans * metadataPerScanGB * (pricing.natGatewayDataProcessing?.pricePerGB || 0.045)) : 0;
                     const transferCost = metadataUploadCost + natGatewayDataCost;
 
                     const total = keyVaultCost + vnetCost + privateEndpointCost + natGatewayCost +
                                  publicIpCost + vmCost + transferCost;
+
+                    const modeLabel = scanningMode === 'cross-account' ? 'Cross-account (host only)' : 'Per-account';
+                    const vnetLabel = useOwnVnet ? ', using own VNet' : '';
 
                     return {
                         total: total,
@@ -833,7 +872,7 @@
                             virtualMachine: vmCost,
                             dataTransfer: transferCost
                         },
-                        details: `${subscriptions} subscription(s) × ${regions} region(s), ${scanFrequencyLabel[scanFrequency]}, ${scanDuration}h per scan`
+                        details: `${modeLabel}: ${subscriptions} subscription(s) × ${regions} region(s), ${scanFrequencyLabel[scanFrequency]}, ${scanDuration}h per scan${vnetLabel}`
                     };
                 }
             }
@@ -892,6 +931,8 @@
                         },
                         dspm: {
                             enabled: dspmEnabled,
+                            scanningMode: dspmEnabled ? document.getElementById('dspmScanningMode').value : 'per-account',
+                            useOwnVnet: dspmEnabled ? document.getElementById('useOwnVnet').checked : false,
                             includeNatGateway: dspmEnabled ? document.getElementById('includeNatGateway').checked : false,
                             scanFrequency: dspmEnabled ? document.getElementById('scanFrequency').value : 'quarterly',
                             scanDuration: dspmEnabled ? (parseInt(document.getElementById('scanDuration').value) || 4) : 4
@@ -961,7 +1002,11 @@
                     'DSPM not enabled';
 
                 document.getElementById('networkDetail').textContent =
-                    `${subscriptions} subscription(s) × ${regions} region(s) × 730 hrs/month (always-on resources)`;
+                    dspmEnabled ?
+                    (config.features.dspm.scanningMode === 'cross-account' ?
+                        `1 host subscription × ${regions} region(s) × 730 hrs/month (always-on resources)` :
+                        `${subscriptions} subscription(s) × ${regions} region(s) × 730 hrs/month (always-on resources)`) :
+                    'DSPM not enabled';
 
                 // Show actual scan count based on frequency
                 let scanDescription = '';
@@ -980,8 +1025,9 @@
                 }
                 document.getElementById('computeDetail').textContent = scanDescription;
 
-                // Toggle NAT Gateway and Public IP visibility (Public IP only deployed with NAT Gateway)
-                const includeNatGateway = config.features.dspm.includeNatGateway && dspmEnabled;
+                // Toggle NAT Gateway and Public IP visibility (hidden if using own VNet or NAT Gateway not selected)
+                const useOwnVnet = config.features.dspm.useOwnVnet && dspmEnabled;
+                const includeNatGateway = config.features.dspm.includeNatGateway && dspmEnabled && !useOwnVnet;
                 document.getElementById('natGatewayRow').style.display = includeNatGateway ? 'flex' : 'none';
                 document.getElementById('publicIpRow').style.display = includeNatGateway ? 'flex' : 'none';
 
@@ -1012,6 +1058,8 @@
         function resetForm() {
             document.getElementById('subscriptions').value = '1';
             document.getElementById('regions').value = '2';
+            document.getElementById('dspmScanningMode').value = 'per-account';
+            document.getElementById('useOwnVnet').checked = false;
             document.getElementById('includeNatGateway').checked = true;
             document.getElementById('scanFrequency').value = 'quarterly';
             document.getElementById('scanDuration').value = '4';
@@ -1074,6 +1122,31 @@
                     dspmConfig.style.display = 'none';
                     dspmScanConfig.style.display = 'none';
                     dspmCard.classList.remove('enabled');
+                }
+            });
+
+            // Scanning mode toggle - disable "use own VNet" for per-account mode
+            const scanningModeSelect = document.getElementById('dspmScanningMode');
+            const useOwnVnetCheckbox = document.getElementById('useOwnVnet');
+            const natGatewayCheckbox = document.getElementById('includeNatGateway');
+
+            scanningModeSelect.addEventListener('change', function() {
+                if (this.value === 'per-account') {
+                    useOwnVnetCheckbox.checked = false;
+                    useOwnVnetCheckbox.disabled = true;
+                } else {
+                    useOwnVnetCheckbox.disabled = false;
+                }
+            });
+
+            // "Use own VNet" disables NAT Gateway (VNet not provisioned = no NAT Gateway)
+            useOwnVnetCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    natGatewayCheckbox.checked = false;
+                    natGatewayCheckbox.disabled = true;
+                } else {
+                    natGatewayCheckbox.disabled = false;
+                    natGatewayCheckbox.checked = true;
                 }
             });
         }
