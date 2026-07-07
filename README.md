@@ -40,13 +40,21 @@ Event-driven monitoring using Event Hubs for IOA (Indicator of Attack) detection
 #### 3. Data Security Posture Management (DSPM)
 Sensitive data scanning and classification
 
-- Key Vault (negligible cost)
-- Private Endpoint (~$7/month per region per subscription)
+**Scanning Modes (April 2026+):**
+- **Per-account scanning:** Infrastructure deployed to every subscription (original model)
+- **Cross-account scanning (NEW):** Infrastructure deployed only to a designated host subscription — dramatically reduces always-on costs for multi-subscription environments
+- **Use your own VNet (NEW):** For cross-account mode, skip VNet/NAT Gateway/Public IP/NSG provisioning entirely
+
+**Resources:**
+- Key Vault (negligible cost, 1 per subscription regardless of mode)
+- Private Endpoint (~$7/month per region per host subscription)
 - Virtual Network (free)
-- NAT Gateway (optional, ~$33/month per region per subscription)
+- NAT Gateway (optional, ~$33/month per region per host subscription)
 - Public IP (conditional with NAT Gateway, ~$4/month)
 - Scanner VMs (runtime only, ~$0.406/hour)
-- **Cost: ~$44/month per subscription per region** (with NAT Gateway)
+
+**Per-account cost:** ~$44/month per subscription per region (with NAT Gateway)
+**Cross-account cost:** ~$44/month per region (host subscription only) + negligible Key Vault per sub
 
 ### AWS
 Coming soon - Asset Inventory, Real-time Visibility, and DSPM features
@@ -65,7 +73,7 @@ Coming soon - Asset Inventory, Real-time Visibility, and DSPM features
 - Real-time Visibility (2 TU): ~$30/month (shared)
 - **Total: ~$30/month** for entire organization
 
-### Example 3: All Features (30 subscriptions, 1 region each, quarterly DSPM scans)
+### Example 3: All Features (30 subscriptions, 1 region each, quarterly DSPM scans, per-account)
 - IOMs: $0/month
 - Real-time Visibility (2 TU): ~$30/month (shared)
 - DSPM with NAT Gateway: ~$1,320/month (30 × $44)
@@ -78,11 +86,26 @@ Coming soon - Asset Inventory, Real-time Visibility, and DSPM features
 - **Total: ~$276/month**
 - **Savings: ~$1,074/month (80%)**
 
+### Example 5: Cross-account Scanning (30 subscriptions, 2 regions, quarterly DSPM)
+- IOMs: $0/month
+- Real-time Visibility (2 TU): ~$30/month (shared)
+- DSPM cross-account with NAT Gateway: ~$88/month (1 host × 2 regions × $44)
+- **Total: ~$118/month**
+- **Savings vs per-account: ~$2,510/month (96%)**
+
 ## 🔧 Cost Optimization Tips
 
 ### Azure
 
-#### 1. Remove NAT Gateway for DSPM
+#### 1. Use Cross-account Scanning for DSPM (NEW - April 2026)
+**Save 90%+ on DSPM infrastructure costs for multi-subscription environments**
+
+- Per-account: $44/month × N subscriptions × M regions
+- Cross-account: $44/month × 1 host × M regions
+- Same scanning coverage — scanner reaches into other subscriptions remotely
+- Combine with "use your own VNet" for maximum savings
+
+#### 2. Remove NAT Gateway for DSPM
 **Save 70-82% on DSPM infrastructure costs**
 
 - With NAT Gateway: $44/month per subscription per region
@@ -95,13 +118,13 @@ Configuration:
 agentlessScanningDeployNatGateway: false
 ```
 
-#### 2. Right-size Event Hub Throughput Units
+#### 3. Right-size Event Hub Throughput Units
 - Start with 2 TU (default)
 - Monitor throughput metrics
 - Scale based on total log volume across all subscriptions
 - Cost: $11/month per TU (shared infrastructure)
 
-#### 3. Optimize DSPM Scanning
+#### 4. Optimize DSPM Scanning
 - Use quarterly scans (default) for compliance
 - Only scan regions where sensitive data resides
 - Consolidate subscriptions where possible
@@ -116,7 +139,8 @@ agentlessScanningDeployNatGateway: false
 
 **DSPM:**
 - [Official Bicep Templates](https://github.com/CrowdStrike/azure-bicep-cloud-registration)
-- [DSPM Cost Estimation](https://falcon.crowdstrike.com/documentation/page/jaf24dc6/dspm-cost-estimation)
+- [DSPM Cost Estimation](https://docs.crowdstrike.com/r/ka120384)
+- [Agentless Scanning Infrastructure Options for Azure](https://docs.crowdstrike.com/r/rc171502)
 - [Configure DSPM Scans](https://falcon.crowdstrike.com/documentation/page/n71e95b3/configure-dspm-scans)
 
 ### AWS Resources
