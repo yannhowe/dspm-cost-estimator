@@ -661,24 +661,56 @@
 
             <!-- Information Section -->
             <div class="section">
-                <h2>About DSPM Cost Estimation</h2>
+                <h2>About Azure Cloud Security Cost Estimation</h2>
                 <div class="info-box">
-                    <h4>📖 How DSPM Costs Work</h4>
-                    <p>Performing DSPM scans results in a slight increase in cloud consumption costs. The exact amount varies based on the size of the environment and Azure's pricing structure.</p>
-                    <p style="margin-top: 10px;"><strong>Resources provisioned by CrowdStrike DSPM:</strong></p>
+                    <h4>📖 How Costs Work — New Registration Architecture (Bicep/Terraform)</h4>
+                    <p>When you register Azure subscriptions with CrowdStrike using the <strong>new registration methods</strong> (Bicep or Terraform), the following resources are created. This replaces the legacy architecture that used Azure Functions, Storage Accounts, and App Service Plans.</p>
+
+                    <p style="margin-top: 16px;"><strong>1. IOMs (Indicators of Misconfiguration) — Free</strong></p>
                     <ul>
-                        <li><strong>Per Subscription:</strong> Azure Key Vault (1 per subscription, stores API credentials), RBAC role definitions & assignments</li>
-                        <li><strong>Per Host Subscription Per Region:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway enabled). In per-account mode, each subscription is a host. In cross-account mode, only the designated host subscription.</li>
-                        <li><strong>At Scan Time:</strong> Azure VM Standard_F8s_v2 (temporary, auto-deleted after scan), OS Disk, Network Interface, NSG</li>
-                        <li><strong>Transaction Costs:</strong> Key Vault secret operations (~$0.03/10k reads), data transfer (metadata only, no cross-region costs)</li>
+                        <li>RBAC custom role (Reader-equivalent) per subscription or management group</li>
+                        <li>Enterprise Application in Entra ID</li>
+                        <li><strong>Cost: $0/month</strong> — no billable Azure resources</li>
                     </ul>
-                    <p style="margin-top: 10px;"><strong>Scanning Modes (April 2026+):</strong></p>
+
+                    <p style="margin-top: 16px;"><strong>2. Real-time Visibility &amp; Detection (IoA) — Shared Infrastructure</strong></p>
                     <ul>
-                        <li><strong>Per-account:</strong> Infrastructure in every subscription × region. Higher cost, full isolation per subscription.</li>
-                        <li><strong>Cross-account:</strong> Infrastructure only in host subscription × region. Scanner reaches into other subscriptions remotely. Significantly lower always-on costs.</li>
+                        <li><strong>EventHub Namespace:</strong> 1 namespace in the CrowdStrike infrastructure subscription (~$11/month base)</li>
+                        <li><strong>EventHubs:</strong> 2 event hubs (Entra ID logs + Activity logs) — included in namespace</li>
+                        <li><strong>Throughput Units:</strong> Configurable (default 2 TU, ~$11/month each)</li>
+                        <li><strong>Diagnostic Settings:</strong> Per subscription + Entra ID (free)</li>
+                        <li><strong>Enterprise Application:</strong> Azure Event Hubs Data Receiver role (free)</li>
                     </ul>
-                    <p style="margin-top: 10px;"><strong>Official Azure Pricing References:</strong></p>
+                    <p style="margin-top: 8px;"><em>Key change from legacy: CrowdStrike now pulls logs directly from EventHub instead of Azure Functions forwarding to CrowdStrike via API. This eliminates Functions, Storage Accounts, App Service Plans, and their associated costs.</em></p>
+
+                    <table style="margin-top: 12px; font-size: 13px;">
+                        <thead><tr><th>Aspect</th><th>Legacy (Deprecated Sept 2026)</th><th>New (Bicep/Terraform)</th></tr></thead>
+                        <tbody>
+                            <tr><td>Log delivery</td><td>Azure Functions → CrowdStrike API</td><td>CrowdStrike pulls from EventHub</td></tr>
+                            <tr><td>Resources</td><td>~15+ (Functions, Storage, VNet, Key Vault, etc.)</td><td>~5 (EventHub NS, 2 EH, Diag Settings, RBAC)</td></tr>
+                            <tr><td>Est. cost</td><td>~$150–300/month</td><td>~$20–35/month</td></tr>
+                            <tr><td>Cert rotation</td><td>Manual</td><td>Not required</td></tr>
+                        </tbody>
+                    </table>
+
+                    <p style="margin-top: 16px;"><strong>3. DSPM (Data Security Posture Management) — Per Subscription + Per Region</strong></p>
                     <ul>
+                        <li><strong>Per Subscription:</strong> Azure Key Vault (stores API credentials), RBAC role definitions &amp; assignments</li>
+                        <li><strong>Per Host Subscription Per Region:</strong> Virtual Network, Private Endpoint, NAT Gateway (optional), Public IP (if NAT Gateway). In per-account mode, every subscription is a host. In cross-account mode, only the designated host subscription.</li>
+                        <li><strong>At Scan Time (temporary):</strong> Azure VM Standard_F8s_v2, OS Disk, NIC, NSG — auto-deleted after scan</li>
+                        <li><strong>Transaction Costs:</strong> Key Vault secret operations (~$0.03/10k reads), data transfer (metadata only)</li>
+                    </ul>
+
+                    <p style="margin-top: 16px;"><strong>DSPM Scanning Modes (April 2026+):</strong></p>
+                    <ul>
+                        <li><strong>Per-account:</strong> Infrastructure in every subscription × region. Full isolation per subscription.</li>
+                        <li><strong>Cross-account (NEW):</strong> Infrastructure only in host subscription × region. Scanner reaches into other subscriptions. 90%+ infra cost reduction for multi-sub environments.</li>
+                        <li><strong>Use your own VNet (NEW):</strong> Skip VNet/NAT/PIP/NSG provisioning entirely (cross-account only).</li>
+                    </ul>
+
+                    <p style="margin-top: 16px;"><strong>Official Azure Pricing References:</strong></p>
+                    <ul>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/event-hubs/" target="_blank">Event Hubs Pricing</a></li>
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/key-vault/" target="_blank">Key Vault Pricing</a></li>
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-network/" target="_blank">Virtual Network Pricing</a></li>
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/private-link/" target="_blank">Private Link Pricing</a></li>
@@ -686,6 +718,15 @@
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/ip-addresses/" target="_blank">IP Addresses Pricing</a></li>
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/" target="_blank">Virtual Machine Pricing</a></li>
                     </ul>
+
+                    <p style="margin-top: 16px;"><strong>Documentation:</strong></p>
+                    <ul>
+                        <li><a href="https://docs.crowdstrike.com/r/ec520d9c" target="_blank">Resources Created When Registering Azure</a></li>
+                        <li><a href="https://docs.crowdstrike.com/r/rc171502" target="_blank">Agentless Scanning Infrastructure Options</a></li>
+                        <li><a href="https://docs.crowdstrike.com/r/ka120384" target="_blank">DSPM Cost Estimation</a></li>
+                        <li><a href="https://docs.crowdstrike.com/r/k2642711" target="_blank">Legacy Azure Registration Migration</a></li>
+                    </ul>
+
                     <p style="margin-top: 10px;"><em>For personalized cost guidance, contact your CrowdStrike Technical Account Manager.</em></p>
                 </div>
             </div>
