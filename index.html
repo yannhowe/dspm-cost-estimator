@@ -681,15 +681,16 @@
                         <li><strong>Diagnostic Settings:</strong> Per subscription + Entra ID (free)</li>
                         <li><strong>Enterprise Application:</strong> Azure Event Hubs Data Receiver role (free)</li>
                     </ul>
-                    <p style="margin-top: 8px;"><em>Key change from legacy: CrowdStrike now pulls logs directly from EventHub instead of Azure Functions forwarding to CrowdStrike via API. This eliminates Functions, Storage Accounts, App Service Plans, and their associated costs.</em></p>
+                    <p style="margin-top: 8px;"><em>Key change from legacy: CrowdStrike now pulls logs directly from EventHub instead of Azure Functions forwarding to CrowdStrike via API. This eliminates Functions, Storage Accounts, VNet, Key Vault, Private Endpoints, App Service Plans and their associated costs from the base registration. Those resource types now only appear if DSPM is enabled.</em></p>
 
                     <table style="margin-top: 12px; font-size: 13px;">
-                        <thead><tr><th>Aspect</th><th>Legacy (Deprecated Sept 2026)</th><th>New (Bicep/Terraform)</th></tr></thead>
+                        <thead><tr><th>Aspect</th><th>Legacy IoA (Deprecated Sept 2026)</th><th>New IoA (Bicep/Terraform)</th></tr></thead>
                         <tbody>
                             <tr><td>Log delivery</td><td>Azure Functions → CrowdStrike API</td><td>CrowdStrike pulls from EventHub</td></tr>
-                            <tr><td>Resources</td><td>~15+ (Functions, Storage, VNet, Key Vault, etc.)</td><td>~5 (EventHub NS, 2 EH, Diag Settings, RBAC)</td></tr>
+                            <tr><td>Resources</td><td>~15+ (VNet, Subnets, Functions, Storage Accounts, Key Vault, Private Endpoints, App Service Plans, EventHub)</td><td>EventHub Namespace + 2 EventHubs + Diagnostic Settings + RBAC roles</td></tr>
                             <tr><td>Est. cost</td><td>~$150–300/month</td><td>~$20–35/month</td></tr>
                             <tr><td>Cert rotation</td><td>Manual</td><td>Not required</td></tr>
+                            <tr><td>VNet / Key Vault / Private Endpoints</td><td>Yes (for IoA log forwarding)</td><td>No (only provisioned if DSPM enabled)</td></tr>
                         </tbody>
                     </table>
 
@@ -709,14 +710,18 @@
                     </ul>
 
                     <p style="margin-top: 16px;"><strong>Official Azure Pricing References:</strong></p>
+                    <p style="margin-top: 4px; font-size: 13px;"><em>Real-time Visibility (IoA):</em></p>
                     <ul>
-                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/event-hubs/" target="_blank">Event Hubs Pricing</a></li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/event-hubs/" target="_blank">Event Hubs Pricing</a> (base registration cost)</li>
+                    </ul>
+                    <p style="margin-top: 8px; font-size: 13px;"><em>DSPM only (not provisioned unless DSPM is enabled):</em></p>
+                    <ul>
                         <li><a href="https://azure.microsoft.com/en-us/pricing/details/key-vault/" target="_blank">Key Vault Pricing</a></li>
-                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-network/" target="_blank">Virtual Network Pricing</a></li>
-                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/private-link/" target="_blank">Private Link Pricing</a></li>
-                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/" target="_blank">NAT Gateway Pricing</a></li>
-                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/ip-addresses/" target="_blank">IP Addresses Pricing</a></li>
-                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/" target="_blank">Virtual Machine Pricing</a></li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-network/" target="_blank">Virtual Network Pricing</a> (free)</li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/private-link/" target="_blank">Private Link Pricing</a> (Private Endpoint for Key Vault)</li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/azure-nat-gateway/" target="_blank">NAT Gateway Pricing</a> (optional)</li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/ip-addresses/" target="_blank">IP Addresses Pricing</a> (only with NAT Gateway)</li>
+                        <li><a href="https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/" target="_blank">Virtual Machine Pricing</a> (scan-time only, temporary)</li>
                     </ul>
 
                     <p style="margin-top: 16px;"><strong>Documentation:</strong></p>
