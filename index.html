@@ -11,9 +11,19 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --crwd-red: #EC0000;
+            --crwd-dark-red: #B52026;
+            --crwd-black: #000000;
+            --crwd-storm: #A7A9AC;
+            --crwd-cloud: #F8F8F8;
+            --crwd-surf: #61C4C9;
+            --crwd-deep-sea: #3D474F;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #EC0000 0%, #1F60A2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--crwd-cloud);
             min-height: 100vh;
             padding: 20px;
         }
@@ -22,26 +32,31 @@
             max-width: 1200px;
             margin: 0 auto;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border-radius: 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
             overflow: hidden;
+            border: 1px solid #e0e0e0;
         }
 
         .header {
-            background: #000000;
+            background: var(--crwd-black);
             color: white;
-            padding: 30px;
-            text-align: center;
+            padding: 36px 30px;
+            text-align: left;
+            border-bottom: 3px solid var(--crwd-red);
         }
 
         .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
+            font-size: 26px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            margin-bottom: 8px;
         }
 
         .header p {
             font-size: 14px;
-            color: #ccc;
+            color: var(--crwd-storm);
+            font-weight: 400;
         }
 
         .content {
@@ -53,11 +68,13 @@
         }
 
         .section h2 {
-            font-size: 20px;
-            color: #000000;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--crwd-black);
             margin-bottom: 15px;
-            border-bottom: 2px solid #EC0000;
+            border-bottom: 2px solid var(--crwd-red);
             padding-bottom: 10px;
+            letter-spacing: -0.2px;
         }
 
         .input-group {
@@ -73,30 +90,35 @@
         }
 
         .form-field label {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 600;
-            color: #555;
+            color: var(--crwd-deep-sea);
             margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .form-field input,
         .form-field select {
             padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
+            border: 1px solid var(--crwd-storm);
+            border-radius: 4px;
             font-size: 14px;
-            transition: border-color 0.3s;
+            font-family: inherit;
+            transition: border-color 0.2s;
+            background: white;
         }
 
         .form-field input:focus,
         .form-field select:focus {
             outline: none;
-            border-color: #EC0000;
+            border-color: var(--crwd-red);
+            box-shadow: 0 0 0 2px rgba(236, 0, 0, 0.1);
         }
 
         .form-field small {
             margin-top: 5px;
-            color: #888;
+            color: var(--crwd-storm);
             font-size: 12px;
         }
 
@@ -111,11 +133,12 @@
             height: 18px;
             margin-right: 10px;
             cursor: pointer;
+            accent-color: var(--crwd-red);
         }
 
         .checkbox-group label {
             font-size: 14px;
-            color: #555;
+            color: var(--crwd-deep-sea);
             cursor: pointer;
         }
 
@@ -127,36 +150,36 @@
 
         button {
             padding: 12px 30px;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
+            font-family: inherit;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary {
-            background: #EC0000;
+            background: var(--crwd-red);
             color: white;
-            border: 2px solid #EC0000;
+            border: 2px solid var(--crwd-red);
         }
 
         .btn-primary:hover {
-            background: #D30000;
-            border-color: #D30000;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(236, 0, 0, 0.3);
+            background: var(--crwd-dark-red);
+            border-color: var(--crwd-dark-red);
         }
 
         .btn-secondary {
-            background: #FFFFFF;
-            color: #000000;
-            border: 2px solid #000000;
+            background: white;
+            color: var(--crwd-black);
+            border: 2px solid var(--crwd-black);
         }
 
         .btn-secondary:hover {
-            background: #F8F8F8;
-            border-color: #000000;
+            background: var(--crwd-cloud);
         }
 
         .loading {
@@ -166,8 +189,8 @@
         }
 
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #EC0000;
+            border: 3px solid var(--crwd-cloud);
+            border-top: 3px solid var(--crwd-red);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -185,29 +208,32 @@
         }
 
         .cost-card {
-            background: linear-gradient(135deg, #F8F8F8 0%, #FFFFFF 100%);
-            padding: 20px;
-            border-radius: 8px;
+            background: var(--crwd-cloud);
+            padding: 24px;
+            border-radius: 4px;
             margin-bottom: 20px;
             border: 1px solid #e0e0e0;
         }
 
         .cost-card h3 {
-            font-size: 16px;
-            color: #555;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--crwd-deep-sea);
             margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .cost-card .amount {
-            font-size: 32px;
-            font-weight: bold;
-            color: #EC0000;
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--crwd-red);
         }
 
         .breakdown {
-            background: #f9f9f9;
+            background: var(--crwd-cloud);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: 4px;
             margin-top: 20px;
         }
 
@@ -223,36 +249,40 @@
             font-weight: bold;
             font-size: 18px;
             padding-top: 15px;
-            border-top: 2px solid #EC0000;
+            border-top: 2px solid var(--crwd-red);
         }
 
         .breakdown-item .label {
-            color: #555;
+            color: var(--crwd-deep-sea);
+            font-size: 14px;
         }
 
         .breakdown-item .value {
-            color: #333;
+            color: var(--crwd-black);
             font-weight: 600;
         }
 
         .info-box {
-            background: #FFF5F5;
-            border-left: 4px solid #EC0000;
-            padding: 15px;
+            background: var(--crwd-cloud);
+            border-left: 4px solid var(--crwd-red);
+            padding: 20px;
             margin-top: 20px;
             border-radius: 4px;
         }
 
         .info-box h4 {
-            color: #D30000;
-            margin-bottom: 10px;
+            color: var(--crwd-black);
+            margin-bottom: 12px;
             font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .info-box p {
-            color: #666666;
+            color: var(--crwd-deep-sea);
             font-size: 13px;
-            line-height: 1.6;
+            line-height: 1.7;
         }
 
         .info-box ul {
@@ -261,24 +291,45 @@
         }
 
         .info-box li {
-            color: #666666;
+            color: var(--crwd-deep-sea);
             font-size: 13px;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
+            line-height: 1.6;
         }
 
         .info-box a {
-            color: #667eea;
+            color: var(--crwd-red);
             text-decoration: none;
             font-weight: 600;
         }
 
         .info-box a:hover {
+            color: var(--crwd-dark-red);
             text-decoration: underline;
+        }
+
+        .info-box table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+        }
+
+        .info-box th, .info-box td {
+            border: 1px solid #e0e0e0;
+            padding: 8px 12px;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        .info-box th {
+            background: white;
+            font-weight: 600;
+            color: var(--crwd-black);
         }
 
         .error {
             background: #f8d7da;
-            border-left: 4px solid #dc3545;
+            border-left: 4px solid var(--crwd-red);
             padding: 15px;
             margin-top: 20px;
             border-radius: 4px;
@@ -286,15 +337,16 @@
         }
 
         .footer {
-            background: #f5f5f5;
-            padding: 20px;
-            text-align: center;
-            font-size: 13px;
-            color: #666;
+            background: var(--crwd-cloud);
+            padding: 20px 30px;
+            text-align: left;
+            font-size: 12px;
+            color: var(--crwd-deep-sea);
+            border-top: 3px solid var(--crwd-red);
         }
 
         .footer a {
-            color: #667eea;
+            color: var(--crwd-red);
             text-decoration: none;
         }
 
@@ -323,32 +375,34 @@
         /* Tab Navigation Styles */
         .tabs {
             display: flex;
-            background: #f5f5f5;
-            border-bottom: 2px solid #e0e0e0;
+            background: var(--crwd-cloud);
+            border-bottom: 1px solid #e0e0e0;
             padding: 0 30px;
         }
 
         .tab {
             background: transparent;
             border: none;
-            padding: 15px 30px;
-            font-size: 16px;
+            padding: 14px 28px;
+            font-size: 14px;
             font-weight: 600;
-            color: #666;
+            color: var(--crwd-storm);
             cursor: pointer;
             border-bottom: 3px solid transparent;
-            transition: all 0.3s;
-            margin-bottom: -2px;
+            transition: all 0.2s;
+            margin-bottom: -1px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-family: inherit;
         }
 
         .tab:hover {
-            color: #EC0000;
-            background: rgba(236, 0, 0, 0.05);
+            color: var(--crwd-red);
         }
 
         .tab.active {
-            color: #EC0000;
-            border-bottom-color: #EC0000;
+            color: var(--crwd-red);
+            border-bottom-color: var(--crwd-red);
             background: white;
         }
 
@@ -362,37 +416,42 @@
 
         /* Feature Card Styles */
         .feature-card {
-            background: #f9f9f9;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            background: var(--crwd-cloud);
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
             padding: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
+            transition: border-color 0.2s;
         }
 
         .feature-card.enabled {
-            border-color: #EC0000;
-            background: #fff5f5;
+            border-color: var(--crwd-red);
+            border-left: 4px solid var(--crwd-red);
+            background: white;
         }
 
         .feature-card h3 {
-            font-size: 18px;
-            color: #000;
-            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--crwd-black);
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .feature-card p {
-            font-size: 14px;
-            color: #666;
-            margin-bottom: 15px;
+            font-size: 13px;
+            color: var(--crwd-deep-sea);
+            margin-bottom: 12px;
+            line-height: 1.6;
         }
 
         .feature-card input[type="checkbox"] {
             width: 20px;
             height: 20px;
             cursor: pointer;
+            accent-color: var(--crwd-red);
         }
 
         .feature-card input[type="checkbox"]:disabled {
@@ -409,8 +468,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🛡️ CrowdStrike Cloud Security Cost Calculator</h1>
-            <p>Estimate infrastructure costs for Falcon Cloud Security across Azure, AWS, and GCP</p>
+            <h1>Falcon Cloud Security — Cost Calculator</h1>
+            <p>Estimate infrastructure costs for CrowdStrike Falcon Cloud Security across Azure, AWS, and GCP</p>
         </div>
 
         <!-- Tab Navigation -->
@@ -599,7 +658,7 @@
                     </div>
 
                     <div class="info-box">
-                        <h4>📊 Cost Breakdown Details</h4>
+                        <h4>Cost Breakdown Details</h4>
 
                         <p><strong>Pricing (Based on Azure Published Rates):</strong></p>
                         <ul>
@@ -630,8 +689,8 @@
                         <p style="margin-top: 10px;"><strong>Note:</strong> Key Vault costs are negligible (transaction-based). Major costs are Private Endpoint and NAT Gateway (24/7 always-on resources, billed at 730 hrs/month). Data transfer costs are minimal because scanners only upload metadata, and all data reading happens within the same region (free intra-region transfer).</p>
                     </div>
 
-                    <div class="info-box" style="background: #d1ecf1; border-left-color: #0c5460;">
-                        <h4>💡 Cost Optimization Tips</h4>
+                    <div class="info-box" style="background: #f0fafa; border-left-color: #61C4C9;">
+                        <h4>Cost Optimization</h4>
                         <ul>
                             <li><strong>Use Cross-account scanning</strong> to deploy infrastructure only on a single host subscription — dramatically reduces always-on costs for multi-subscription environments</li>
                             <li><strong>Bring your own VNet</strong> (cross-account mode) to skip VNet/NAT Gateway/Public IP/NSG provisioning entirely</li>
@@ -643,8 +702,8 @@
                         </ul>
                     </div>
 
-                    <div class="info-box" style="background: #e7f3ff; border-left-color: #004085;">
-                        <h4>📡 Data Transfer Cost Breakdown</h4>
+                    <div class="info-box" style="background: #f0fafa; border-left-color: #3D474F;">
+                        <h4>Data Transfer Details</h4>
                         <p><strong>Why data transfer costs are minimal:</strong></p>
                         <ul>
                             <li><strong>No cross-region data movement:</strong> Scanner VMs are deployed in the same region as your data</li>
@@ -663,7 +722,7 @@
             <div class="section">
                 <h2>About Azure Cloud Security Cost Estimation</h2>
                 <div class="info-box">
-                    <h4>📖 How Costs Work — New Registration Architecture (Bicep/Terraform)</h4>
+                    <h4>How Costs Work — New Registration Architecture (Bicep/Terraform)</h4>
                     <p>When you register Azure subscriptions with CrowdStrike using the <strong>new registration methods</strong> (Bicep or Terraform), the following resources are created. This replaces the legacy architecture that used Azure Functions, Storage Accounts, and App Service Plans.</p>
 
                     <p style="margin-top: 16px;"><strong>1. IOMs (Indicators of Misconfiguration) — Free</strong></p>
@@ -1116,7 +1175,7 @@
         function showError(message) {
             document.getElementById('errorMessage').innerHTML = `
                 <div class="error">
-                    <strong>⚠️ Error:</strong> ${message}
+                    <strong>Error:</strong> ${message}
                 </div>
             `;
         }
