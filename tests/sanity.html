@@ -9,6 +9,9 @@
   .pass { color: #1a7a1a; background: #e8f8e8; padding: 6px 12px; margin: 4px 0; border-radius: 3px; display: block; }
   .fail { color: #7a1a1a; background: #f8e8e8; padding: 6px 12px; margin: 4px 0; border-radius: 3px; display: block; }
   .section { margin: 20px 0 8px; font-weight: bold; font-size: 14px; border-bottom: 2px solid #EC0000; padding-bottom: 4px; }
+  .cloud-header { margin: 36px 0 16px; padding: 10px 16px; font-size: 15px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; border-radius: 4px; }
+  .cloud-header.aws   { background: #232f3e; color: #ff9900; }
+  .cloud-header.azure { background: #0072c6; color: #ffffff; }
   #summary { margin-top: 20px; font-size: 16px; font-weight: bold; padding: 12px; border-radius: 4px; }
 </style>
 </head>
@@ -24,6 +27,13 @@ const out = document.getElementById('results');
 function section(name) {
   const el = document.createElement('div');
   el.className = 'section';
+  el.textContent = name;
+  out.appendChild(el);
+}
+
+function cloudHeader(name, cls) {
+  const el = document.createElement('div');
+  el.className = 'cloud-header ' + cls;
   el.textContent = name;
   out.appendChild(el);
 }
@@ -89,6 +99,7 @@ function calcAgentless(accounts, scanningMode, hostAccounts, networkConfig, regi
 }
 
 // ── IOMs ──────────────────────────────────────────────────────────────────────
+cloudHeader('☁ AWS Tests', 'aws');
 section('IOMs — always free');
 assert('IOMs cost = $0', 0, 0);
 
@@ -208,6 +219,7 @@ function calcAzureDSPM(subscriptions, regions, scanningMode, useOwnVnet, include
 }
 
 // ── Azure IOMs ────────────────────────────────────────────────────────────────
+cloudHeader('☁ Azure Tests', 'azure');
 section('Azure IOMs — always free');
 assert('Azure IOMs = $0', 0, 0);
 
