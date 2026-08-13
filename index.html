@@ -1687,7 +1687,57 @@
             // Load AWS pricing and initialize AWS feature toggles
             await loadAwsPricingData();
             initAwsFeatureToggles();
+
+            // Auto-recalculate on any input change once results have been shown once
+            initAutoRecalculate();
         });
+
+        // Debounce helper — delays fn call until ms after last trigger
+        function debounce(fn, ms) {
+            let t;
+            return function() { clearTimeout(t); t = setTimeout(fn, ms); };
+        }
+
+        function initAutoRecalculate() {
+            const azureInputIds = [
+                'azure-rtv', 'azure-rtv-throughput', 'azure-dspm', 'dspmScanningMode',
+                'useOwnVnet', 'includeNatGateway', 'subscriptions', 'regions',
+                'scanFrequency', 'scanDuration'
+            ];
+            const awsInputIds = [
+                'aws-rtv', 'aws-rtv-method', 'aws-rtv-regions',
+                'aws-sensor', 'aws-idp', 'aws-agentless',
+                'aws-dspm', 'aws-vuln', 'aws-scanning-mode',
+                'aws-host-accounts', 'aws-network-config', 'aws-scan-regions',
+                'aws-accounts', 'aws-scan-frequency', 'aws-scan-duration'
+            ];
+
+            const debouncedAzure = debounce(() => {
+                if (document.getElementById('results').style.display !== 'none') {
+                    calculateCost();
+                }
+            }, 300);
+
+            const debouncedAws = debounce(() => {
+                if (document.getElementById('aws-results').style.display !== 'none') {
+                    calculateAwsCost();
+                }
+            }, 300);
+
+            azureInputIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const event = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : 'input';
+                el.addEventListener(event, debouncedAzure);
+            });
+
+            awsInputIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const event = (el.type === 'checkbox' || el.tagName === 'SELECT') ? 'change' : 'input';
+                el.addEventListener(event, debouncedAws);
+            });
+        }
 
         // Azure Feature Toggle Manager
         function initAzureFeatureToggles() {
