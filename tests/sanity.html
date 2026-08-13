@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DSPM Cost Calculator — Sanity Tests</title>
+<title>DSPM Cost Calculator — Azure + AWS Sanity Tests</title>
 <style>
   body { font-family: monospace; padding: 20px; background: #f8f8f8; }
   h1 { font-size: 18px; margin-bottom: 20px; }
@@ -13,7 +13,7 @@
 </style>
 </head>
 <body>
-<h1>DSPM Cost Calculator — Sanity Tests</h1>
+<h1>DSPM Cost Calculator — Azure + AWS Sanity Tests</h1>
 <div id="results"></div>
 <div id="summary"></div>
 
@@ -159,6 +159,122 @@ assert('Monthly EC2 ≈ $1.22 (3× quarterly)', m.ec2, 1.224, 0.02);
 assert('Weekly EC2 ≈ $4.90 (12× quarterly)', w.ec2, 4.896, 0.02);
 assert('Monthly EC2 = 3× quarterly', Math.abs(m.ec2 / q.ec2 - 3) < 0.01 ? 1 : 0, 1);
 assert('Weekly EC2 = 12× quarterly', Math.abs(w.ec2 / q.ec2 - 12) < 0.01 ? 1 : 0, 1);
+
+// ══════════════════════════════════════════════════════════════════════════════
+// AZURE TESTS
+// ══════════════════════════════════════════════════════════════════════════════
+
+const AZ = {
+  privateEndpoint: { pricePerHour: 0.01 },
+  natGateway:      { pricePerHour: 0.045 },
+  publicIp:        { pricePerHour: 0.005 },
+  virtualMachine:  { pricePerHour: 0.406 },
+  eventHubNamespace:      { pricePerHour: 0.011 },
+  eventHubThroughputUnit: { pricePerHour: 0.015 },
+  storageAccount:         { pricePerMonth: 5.0 },
+  bandwidth:              { pricePerGB: 0.087 },
+  natGatewayDataProcessing: { pricePerGB: 0.045 }
+};
+
+function calcAzureRTV(throughputUnits) {
+  const namespaceBase = AZ.eventHubNamespace.pricePerHour * 730;
+  const throughputCost = throughputUnits * AZ.eventHubThroughputUnit.pricePerHour * 730;
+  const storageCost = AZ.storageAccount.pricePerMonth;
+  return { namespace: namespaceBase, throughput: throughputCost, storage: storageCost,
+           total: namespaceBase + throughputCost + storageCost };
+}
+
+function calcAzureDSPM(subscriptions, regions, scanningMode, useOwnVnet, includeNatGateway, scanFrequency, scanDuration) {
+  const scansPerMonth = scanFrequencyMap[scanFrequency];
+  const infraSubs = scanningMode === 'cross-account' ? 1 : subscriptions;
+  const secretReadsPerMonth = scansPerMonth * subscriptions * regions;
+  const keyVaultCost = (secretReadsPerMonth / 10000) * 0.03;
+  const privateEndpointCost = AZ.privateEndpoint.pricePerHour * infraSubs * regions * 730;
+  let natCost = 0, publicIpCost = 0;
+  if (!useOwnVnet && includeNatGateway) {
+    natCost = AZ.natGateway.pricePerHour * infraSubs * regions * 730;
+    publicIpCost = AZ.publicIp.pricePerHour * infraSubs * regions * 730;
+  }
+  const vmHours = scanDuration * scansPerMonth * subscriptions * regions;
+  const vmCost = AZ.virtualMachine.pricePerHour * vmHours;
+  const totalScans = scansPerMonth * subscriptions * regions;
+  const transferCost = totalScans * 0.5 * AZ.bandwidth.pricePerGB
+    + (includeNatGateway && !useOwnVnet ? totalScans * 0.5 * AZ.natGatewayDataProcessing.pricePerGB : 0);
+  return {
+    keyVault: keyVaultCost, privateEndpoint: privateEndpointCost,
+    nat: natCost, publicIp: publicIpCost, vm: vmCost, transfer: transferCost,
+    total: keyVaultCost + privateEndpointCost + natCost + publicIpCost + vmCost + transferCost
+  };
+}
+
+// ── Azure IOMs ────────────────────────────────────────────────────────────────
+section('Azure IOMs — always free');
+assert('Azure IOMs = $0', 0, 0);
+
+// ── Azure Real-time Visibility (Event Hub) ────────────────────────────────────
+section('Azure Real-time Visibility — Event Hub (the bug that was fixed)');
+const rtv2 = calcAzureRTV(2);
+// namespace: 0.011 × 730 = $8.03; TU: 2 × 0.015 × 730 = $21.90; storage: $5.00
+assert('Namespace (0.011 × 730) = $8.03', rtv2.namespace, 8.03);
+assert('2 TU (2 × 0.015 × 730) = $21.90', rtv2.throughput, 21.90);
+assert('Storage account = $5.00', rtv2.storage, 5.00);
+assert('RTV total 2 TU = $34.93', rtv2.total, 34.93);
+const rtv1 = calcAzureRTV(1);
+assert('RTV total 1 TU = $18.98', rtv1.total, 18.98);
+// each additional TU adds 0.015 × 730 = $10.95
+assert('Each additional TU adds $10.95', rtv2.total - rtv1.total, 10.95);
+
+// ── Azure DSPM per-account baseline ──────────────────────────────────────────
+section('Azure DSPM — per-account 1 sub 2 regions quarterly 4h with NAT');
+const azBase = calcAzureDSPM(1, 2, 'per-account', false, true, 'quarterly', 4);
+// privateEndpoint: 0.01 × 1 × 2 × 730 = $14.60
+assert('Private endpoint 1 sub 2 regions = $14.60', azBase.privateEndpoint, 14.60);
+// NAT: 0.045 × 1 × 2 × 730 = $65.70
+assert('NAT Gateway 1 sub 2 regions = $65.70', azBase.nat, 65.70);
+// Public IP: 0.005 × 1 × 2 × 730 = $7.30
+assert('Public IP 1 sub 2 regions = $7.30', azBase.publicIp, 7.30);
+// VM: 0.406 × (4 × 1/3 × 1 × 2) = 0.406 × 2.667 = $1.083
+assert('VM quarterly 4h 1 sub 2 regions ≈ $1.08', azBase.vm, 1.083, 0.05);
+
+// ── Azure DSPM cross-account vs per-account ───────────────────────────────────
+section('Azure DSPM — cross-account saves infra (10 subs 2 regions)');
+const azPer = calcAzureDSPM(10, 2, 'per-account',   false, true, 'quarterly', 4);
+const azCross = calcAzureDSPM(10, 2, 'cross-account', false, true, 'quarterly', 4);
+// Per-account: infraSubs=10 → NAT = 0.045 × 10 × 2 × 730 = $657
+assert('Per-account NAT 10 subs 2 regions = $657', azPer.nat, 657.00);
+// Cross-account: infraSubs=1 → NAT = $65.70
+assert('Cross-account NAT 10 subs 2 regions = $65.70', azCross.nat, 65.70);
+// VM cost is the same (scans all 10 subs regardless)
+assert('VM cost same across modes (all subs scanned)', Math.abs(azPer.vm - azCross.vm) < 0.01 ? 1 : 0, 1);
+assert('Cross-account total < per-account total', azCross.total < azPer.total ? 1 : 0, 1);
+
+// ── Azure DSPM no NAT ─────────────────────────────────────────────────────────
+section('Azure DSPM — no NAT Gateway');
+const azNoNat = calcAzureDSPM(1, 2, 'per-account', false, false, 'quarterly', 4);
+assert('No NAT: nat cost = $0', azNoNat.nat, 0.00);
+assert('No NAT: public IP = $0', azNoNat.publicIp, 0.00);
+assert('No NAT: private endpoint still charged = $14.60', azNoNat.privateEndpoint, 14.60);
+
+// ── Azure DSPM useOwnVnet ─────────────────────────────────────────────────────
+section('Azure DSPM — use own VNet (cross-account only, skips NAT+PublicIP)');
+const azOwnVnet = calcAzureDSPM(5, 2, 'cross-account', true, true, 'quarterly', 4);
+assert('Own VNet: NAT = $0', azOwnVnet.nat, 0.00);
+assert('Own VNet: Public IP = $0', azOwnVnet.publicIp, 0.00);
+assert('Own VNet: private endpoint still charged = $14.60', azOwnVnet.privateEndpoint, 14.60);
+
+// ── Azure DSPM VM frequency scaling ──────────────────────────────────────────
+section('Azure DSPM — VM cost scales with scan frequency');
+const azQ = calcAzureDSPM(1, 1, 'per-account', false, false, 'quarterly', 4);
+const azM = calcAzureDSPM(1, 1, 'per-account', false, false, 'monthly',   4);
+const azW = calcAzureDSPM(1, 1, 'per-account', false, false, 'weekly',    4);
+// quarterly: 0.406 × (4 × 1/3 × 1 × 1) = $0.541
+assert('Quarterly VM 1 sub 1 region 4h ≈ $0.54', azQ.vm, 0.541, 0.02);
+// monthly: 0.406 × (4 × 1 × 1 × 1) = $1.624
+assert('Monthly VM ≈ $1.62 (3× quarterly)', azM.vm, 1.624, 0.02);
+// weekly: 0.406 × (4 × 4 × 1 × 1) = $6.496
+assert('Weekly VM ≈ $6.50 (12× quarterly)', azW.vm, 6.496, 0.02);
+assert('Monthly VM = 3× quarterly', Math.abs(azM.vm / azQ.vm - 3) < 0.01 ? 1 : 0, 1);
+assert('Weekly VM = 12× quarterly', Math.abs(azW.vm / azQ.vm - 12) < 0.01 ? 1 : 0, 1);
 
 // ── Summary ───────────────────────────────────────────────────────────────────
 const passed = results.filter(Boolean).length;

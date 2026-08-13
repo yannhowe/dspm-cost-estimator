@@ -262,6 +262,24 @@
             font-weight: 600;
         }
 
+        .feature-tag {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            margin-left: 8px;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        .tag-ioms      { background: #f0f0f0; color: #555; }
+        .tag-rtv       { background: #e8f4fb; color: #1a6b99; }
+        .tag-dspm      { background: #fff0e8; color: #b85c00; }
+        .tag-sensor    { background: #f0f8ec; color: #3a7a1a; }
+        .tag-agentless { background: #f3ecfb; color: #6a2da0; }
+
         .info-box {
             background: var(--crwd-cloud);
             border-left: 4px solid var(--crwd-red);
@@ -617,52 +635,52 @@
                         <h3 style="margin-bottom: 15px; color: #333;">Cost Breakdown</h3>
 
                         <div class="breakdown-item">
-                            <span class="label">Key Vault (transaction-based, negligible)</span>
+                            <span class="label">Key Vault (transaction-based, negligible)<span class="feature-tag tag-dspm">DSPM</span></span>
                             <span class="value" id="keyVaultCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Virtual Network (per subscription per region)</span>
+                            <span class="label">Virtual Network (per subscription per region)<span class="feature-tag tag-dspm">DSPM</span></span>
                             <span class="value" id="vnetCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Private Endpoint (per host subscription per region)</span>
+                            <span class="label">Private Endpoint (per host subscription per region)<span class="feature-tag tag-dspm">DSPM</span></span>
                             <span class="value" id="privateEndpointCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="natGatewayRow">
-                            <span class="label">NAT Gateway (per host subscription per region)</span>
+                            <span class="label">NAT Gateway (per host subscription per region)<span class="feature-tag tag-dspm">DSPM</span></span>
                             <span class="value" id="natGatewayCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="publicIpRow">
-                            <span class="label">Public IP (per host subscription per region, only with NAT Gateway)</span>
+                            <span class="label">Public IP (per host subscription per region, only with NAT Gateway)<span class="feature-tag tag-dspm">DSPM</span></span>
                             <span class="value" id="publicIpCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Azure VM (Standard_F8s_v2)</span>
+                            <span class="label">Azure VM (Standard_F8s_v2)<span class="feature-tag tag-dspm">DSPM</span></span>
                             <span class="value" id="vmCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item">
-                            <span class="label">Data Transfer (metadata only, minimal)</span>
+                            <span class="label">Data Transfer (metadata only, minimal)<span class="feature-tag tag-dspm">DSPM</span></span>
                             <span class="value" id="transferCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="eventHubNamespaceRow" style="display:none;">
-                            <span class="label">Event Hub Namespace (shared, 1 per CID)</span>
+                            <span class="label">Event Hub Namespace (shared, 1 per CID)<span class="feature-tag tag-rtv">Real-time Visibility</span></span>
                             <span class="value" id="eventHubNamespaceCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="eventHubThroughputRow" style="display:none;">
-                            <span class="label">Event Hub Throughput Units</span>
+                            <span class="label">Event Hub Throughput Units<span class="feature-tag tag-rtv">Real-time Visibility</span></span>
                             <span class="value" id="eventHubThroughputCost">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="eventHubStorageRow" style="display:none;">
-                            <span class="label">Storage Account (legacy registrations only)</span>
+                            <span class="label">Storage Account (legacy registrations only)<span class="feature-tag tag-rtv">Real-time Visibility</span></span>
                             <span class="value" id="eventHubStorageCost">$0.00</span>
                         </div>
 
@@ -1000,52 +1018,52 @@
                         <h3 style="margin-bottom:15px; color:#333;">Cost Breakdown</h3>
 
                         <div class="breakdown-item" id="aws-row-iams">
-                            <span class="label">IAM Roles (Integration + Scanner + Instance Profile)</span>
+                            <span class="label">IAM Roles (Integration + Scanner + Instance Profile)<span class="feature-tag tag-ioms">IOMs</span><span class="feature-tag tag-agentless">Agentless</span></span>
                             <span class="value" id="aws-cost-iams">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-cloudtrail" style="display:none;">
-                            <span class="label">CloudTrail Trail (per region)</span>
+                            <span class="label">CloudTrail Trail (per region)<span class="feature-tag tag-rtv">Real-time Visibility</span></span>
                             <span class="value" id="aws-cost-cloudtrail">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-eventbridge" style="display:none;">
-                            <span class="label">EventBridge Rules (2 rules × regions)</span>
+                            <span class="label">EventBridge Rules (2 rules × regions)<span class="feature-tag tag-rtv">Real-time Visibility</span></span>
                             <span class="value" id="aws-cost-eventbridge">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-sqs" style="display:none;">
-                            <span class="label">SQS (S3 method — CloudTrail log queue)</span>
+                            <span class="label">SQS (S3 method — CloudTrail log queue)<span class="feature-tag tag-rtv">Real-time Visibility</span></span>
                             <span class="value" id="aws-cost-sqs">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-lambda" style="display:none;">
-                            <span class="label">Lambda (1-click sensor deployment orchestrator)</span>
+                            <span class="label">Lambda (1-click sensor deployment orchestrator)<span class="feature-tag tag-sensor">1-Click Sensor</span></span>
                             <span class="value" id="aws-cost-lambda">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-kms" style="display:none;">
-                            <span class="label">KMS Keys (per region per host account)</span>
+                            <span class="label">KMS Keys (per region per host account)<span class="feature-tag tag-agentless">Agentless</span></span>
                             <span class="value" id="aws-cost-kms">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-secrets" style="display:none;">
-                            <span class="label">Secrets Manager (API client secret)</span>
+                            <span class="label">Secrets Manager (API client secret)<span class="feature-tag tag-agentless">Agentless</span></span>
                             <span class="value" id="aws-cost-secrets">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-nat" style="display:none;">
-                            <span class="label">NAT Gateway + Elastic IP (per region per host account, always-on)</span>
+                            <span class="label">NAT Gateway + Elastic IP (per region per host account, always-on)<span class="feature-tag tag-agentless">Agentless</span></span>
                             <span class="value" id="aws-cost-nat">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-ec2" style="display:none;">
-                            <span class="label">EC2 Scanner (c6a.2xlarge, scan-time only)</span>
+                            <span class="label">EC2 Scanner (c6a.2xlarge, scan-time only)<span class="feature-tag tag-agentless">Agentless</span></span>
                             <span class="value" id="aws-cost-ec2">$0.00</span>
                         </div>
 
                         <div class="breakdown-item" id="aws-row-transfer" style="display:none;">
-                            <span class="label">Data Transfer Out (scan metadata ~0.5 GB/scan)</span>
+                            <span class="label">Data Transfer Out (scan metadata ~0.5 GB/scan)<span class="feature-tag tag-agentless">Agentless</span></span>
                             <span class="value" id="aws-cost-transfer">$0.00</span>
                         </div>
 
