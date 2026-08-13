@@ -626,8 +626,8 @@
                     </div>
 
                     <!-- Feature Summary -->
-                    <div id="featureSummary" style="margin: 20px 0; padding: 15px; background: #f9f9f9; border-left: 4px solid #EC0000; border-radius: 4px;">
-                        <h3>Enabled Features:</h3>
+                    <div id="featureSummary" class="info-box">
+                        <h4>Enabled Features:</h4>
                         <p>Calculate costs to see feature breakdown</p>
                     </div>
 
@@ -1009,8 +1009,8 @@
                         <div class="amount" id="aws-totalCost">$0.00</div>
                     </div>
 
-                    <div id="aws-featureSummary" style="margin:20px 0; padding:15px; background:#f9f9f9; border-left:4px solid #EC0000; border-radius:4px;">
-                        <h3>Enabled Features:</h3>
+                    <div id="aws-featureSummary" class="info-box">
+                        <h4>Enabled Features:</h4>
                         <p>Calculate costs to see feature breakdown</p>
                     </div>
 
@@ -1626,7 +1626,7 @@
                 document.getElementById('publicIpRow').style.display = includeNatGateway ? 'flex' : 'none';
 
                 // Add feature breakdown summary to results
-                let featureSummary = '<h3>Enabled Features:</h3><ul>';
+                let featureSummary = '<h4>Enabled Features:</h4><ul>';
                 if (iomsEnabled) featureSummary += `<li><strong>IOMs:</strong> $${iomsResult.total.toFixed(2)}/month - ${iomsResult.details}</li>`;
                 if (rtvEnabled) featureSummary += `<li><strong>Real-time Visibility:</strong> $${rtvResult.total.toFixed(2)}/month - ${rtvResult.details}</li>`;
                 if (dspmEnabled) featureSummary += `<li><strong>DSPM:</strong> $${dspmResult.total.toFixed(2)}/month - ${dspmResult.details}</li>`;
@@ -1843,7 +1843,7 @@
                 document.getElementById('aws-cost-transfer').textContent = `$${(agentlessR.resources.transfer || 0).toFixed(2)}`;
 
                 // Feature summary
-                let summary = '<h3>Enabled Features:</h3><ul>';
+                let summary = '<h4>Enabled Features:</h4><ul>';
                 summary += `<li><strong>IOMs:</strong> $0.00/month — ${iomsR.details}</li>`;
                 if (rtvR.total > 0 || rtvEnabled || idpEnabled) summary += `<li><strong>Real-time Visibility:</strong> $${rtvR.total.toFixed(2)}/month — ${rtvR.details}</li>`;
                 if (sensorEnabled) summary += `<li><strong>1-Click Sensor Deployment:</strong> $${sensorR.total.toFixed(2)}/month — ${sensorR.details}</li>`;
