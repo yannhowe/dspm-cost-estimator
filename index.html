@@ -816,10 +816,301 @@
         <!-- AWS Tab Content -->
         <div id="aws-content" class="tab-content">
         <div class="content">
+
+            <!-- Feature Selection Section -->
             <div class="section">
-                <h2>AWS Cost Calculator - Coming Soon</h2>
-                <p>AWS cost estimation features will be available soon.</p>
+                <h2>Feature Selection</h2>
+                <p style="margin-bottom: 20px; color: #666;">Select which CrowdStrike Cloud Security features you want to estimate costs for. Matches the AWS account registration wizard.</p>
+
+                <!-- IOMs Feature -->
+                <div class="feature-card enabled" id="aws-feature-ioms">
+                    <h3>
+                        <input type="checkbox" id="aws-ioms" checked disabled>
+                        <span>Asset Inventory + Indicators of Misconfiguration (IOMs)</span>
+                    </h3>
+                    <p>Always enabled. Creates a cross-account IAM role (<code>CrowdStrikeCSPMReader</code>) with SecurityAudit policy per account.</p>
+                    <p><strong>Cost:</strong> Free — IAM roles have no charge.</p>
+                </div>
+
+                <!-- Real-time Visibility Feature -->
+                <div class="feature-card" id="aws-feature-rtv">
+                    <h3>
+                        <input type="checkbox" id="aws-rtv">
+                        <span>Real-time Visibility &amp; Detection (IOA)</span>
+                    </h3>
+                    <p>Event-driven monitoring of CloudTrail logs for IOA (Indicator of Attack) detection. Requires a multi-region CloudTrail trail.</p>
+                    <div class="feature-config" id="aws-rtv-config" style="display:none;">
+                        <div class="form-field" style="margin-bottom:15px;">
+                            <label for="aws-rtv-method">Log Ingestion Method</label>
+                            <select id="aws-rtv-method">
+                                <option value="eventbridge">EventBridge (recommended)</option>
+                                <option value="s3">S3 Bucket</option>
+                            </select>
+                            <small>EventBridge: CrowdStrike creates EventBridge rules per region. S3: CrowdStrike reads from your existing CloudTrail S3 bucket via SQS.</small>
+                        </div>
+                        <div class="form-field">
+                            <label for="aws-rtv-regions">Number of AWS Regions (for EventBridge rules)</label>
+                            <input type="number" id="aws-rtv-regions" min="1" max="30" value="3">
+                            <small>EventBridge rules are deployed per region. S3 method cost is region-independent.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 1-Click Sensor Deployment -->
+                <div class="feature-card" id="aws-feature-sensor">
+                    <h3>
+                        <input type="checkbox" id="aws-sensor">
+                        <span>1-Click Sensor Deployment</span>
+                    </h3>
+                    <p>Automated Falcon sensor deployment via AWS SSM. Creates a Lambda orchestrator function and SSM-based deployment pipeline.</p>
+                    <p><strong>Cost:</strong> Negligible — Lambda invocations and SSM are near-free at typical deployment volumes (&lt;$1/month).</p>
+                </div>
+
+                <!-- IDP Feature -->
+                <div class="feature-card" id="aws-feature-idp">
+                    <h3>
+                        <input type="checkbox" id="aws-idp">
+                        <span>Identity Protection (IDP)</span>
+                    </h3>
+                    <p>Requires Falcon Identity Protection subscription. Enabling IDP automatically enables Real-time Visibility &amp; Detection.</p>
+                    <p><strong>Cost:</strong> No additional AWS infrastructure cost beyond Real-time Visibility. IDP licensing is separate.</p>
+                </div>
+
+                <!-- Agentless Scanning Feature -->
+                <div class="feature-card" id="aws-feature-agentless">
+                    <h3>
+                        <input type="checkbox" id="aws-agentless">
+                        <span>Agentless Scanning</span>
+                    </h3>
+                    <p>Deploys scanning infrastructure (VPC, NAT Gateway, EC2 scanner) to scan cloud resources without installing agents.</p>
+                    <div class="feature-config" id="aws-agentless-config" style="display:none;">
+
+                        <div style="margin-bottom:15px;">
+                            <label style="font-size:13px; font-weight:600; color:var(--crwd-deep-sea); text-transform:uppercase; letter-spacing:0.3px; display:block; margin-bottom:8px;">Scan Types</label>
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="aws-dspm" checked>
+                                <label for="aws-dspm">DSPM — Data Security Posture Management (S3, EC2/EBS, RDS, Redshift, DynamoDB)</label>
+                            </div>
+                            <div class="checkbox-group" style="margin-top:10px;">
+                                <input type="checkbox" id="aws-vuln">
+                                <label for="aws-vuln">Vulnerability Scanning (EC2 instances) — shares DSPM infrastructure, minimal extra cost</label>
+                            </div>
+                        </div>
+
+                        <div class="form-field" style="margin-bottom:15px;">
+                            <label for="aws-scanning-mode">Scanning Infrastructure Mode</label>
+                            <select id="aws-scanning-mode">
+                                <option value="cross-account">Cross-account scanning — recommended for AWS Organizations (VPC infra in host account only)</option>
+                                <option value="per-account">Per-account scanning — VPC infrastructure deployed in every account</option>
+                                <option value="use-existing">Use existing infrastructure — reuse scanner from another registered account in this CID</option>
+                            </select>
+                            <small>Cross-account: only the host account(s) get VPC/NAT/KMS infrastructure. Target accounts get IAM roles + KMS key only.</small>
+                        </div>
+
+                        <div class="form-field" id="aws-host-accounts-field" style="margin-bottom:15px;">
+                            <label for="aws-host-accounts">Number of Host Accounts</label>
+                            <input type="number" id="aws-host-accounts" min="1" value="1">
+                            <small>For cross-account: typically 1 per AWS Organization. For per-account: same as total accounts.</small>
+                        </div>
+
+                        <div class="form-field" style="margin-bottom:15px;">
+                            <label for="aws-network-config">Network Configuration</label>
+                            <select id="aws-network-config">
+                                <option value="new-vpc-nat">New VPC + NAT Gateway (default)</option>
+                                <option value="new-vpc-no-nat">New VPC without NAT Gateway</option>
+                                <option value="custom-vpc">Use your own custom VPC (no new VPC provisioned)</option>
+                            </select>
+                            <small>NAT Gateway provides a static egress IP for scanner traffic. Without NAT, scanner instances use dynamic public IPs.</small>
+                        </div>
+
+                        <div class="form-field" style="margin-bottom:15px;">
+                            <label for="aws-scan-regions">Regions to Scan per Host Account (max 15)</label>
+                            <input type="number" id="aws-scan-regions" min="1" max="15" value="3">
+                            <small>Each region gets its own VPC stack in the host account(s).</small>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Environment Configuration -->
+            <div class="section">
+                <h2>Environment Configuration</h2>
+                <div class="input-group">
+                    <div class="form-field">
+                        <label for="aws-accounts">Total AWS Accounts</label>
+                        <input type="number" id="aws-accounts" min="1" value="1">
+                        <small>Total registered AWS accounts (individual or org members)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DSPM Scan Configuration -->
+            <div class="section" id="aws-dspm-scan-config" style="display:none;">
+                <h2>DSPM Scan Configuration</h2>
+                <p style="margin-bottom:15px; color:#666; font-size:13px;">Scan frequency is configured post-registration in Falcon: <em>Cloud Security &gt; Settings &gt; Configure &gt; Agentless scanning configuration</em>.</p>
+                <div class="input-group">
+                    <div class="form-field">
+                        <label for="aws-scan-frequency">Scan Frequency</label>
+                        <select id="aws-scan-frequency">
+                            <option value="quarterly">Quarterly (Default — every 3 months)</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="biweekly">Bi-weekly</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                        <small>How often DSPM scans run</small>
+                    </div>
+                    <div class="form-field">
+                        <label for="aws-scan-duration">Average Scan Duration (hours)</label>
+                        <input type="number" id="aws-scan-duration" min="1" max="24" value="4">
+                        <small>Time EC2 c6a.2xlarge scanner runs per scan (1–24 hours)</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="button-group">
+                <button class="btn-primary" onclick="calculateAwsCost()">Calculate Costs</button>
+                <button class="btn-secondary" onclick="resetAwsForm()">Reset</button>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="aws-loading">
+                <div class="spinner"></div>
+                <p style="margin-top:15px; color:#666;">Fetching current AWS pricing...</p>
+            </div>
+
+            <!-- Error -->
+            <div id="aws-errorMessage"></div>
+
+            <!-- Results -->
+            <div class="results" id="aws-results">
+                <div class="section">
+                    <h2>Cost Estimate</h2>
+                    <div class="cost-card">
+                        <h3>Estimated Monthly Cost</h3>
+                        <div class="amount" id="aws-totalCost">$0.00</div>
+                    </div>
+
+                    <div id="aws-featureSummary" style="margin:20px 0; padding:15px; background:#f9f9f9; border-left:4px solid #EC0000; border-radius:4px;">
+                        <h3>Enabled Features:</h3>
+                        <p>Calculate costs to see feature breakdown</p>
+                    </div>
+
+                    <div class="breakdown">
+                        <h3 style="margin-bottom:15px; color:#333;">Cost Breakdown</h3>
+
+                        <div class="breakdown-item" id="aws-row-iams">
+                            <span class="label">IAM Roles (Integration + Scanner + Instance Profile)</span>
+                            <span class="value" id="aws-cost-iams">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-cloudtrail" style="display:none;">
+                            <span class="label">CloudTrail Trail (per region)</span>
+                            <span class="value" id="aws-cost-cloudtrail">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-eventbridge" style="display:none;">
+                            <span class="label">EventBridge Rules (2 rules × regions)</span>
+                            <span class="value" id="aws-cost-eventbridge">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-sqs" style="display:none;">
+                            <span class="label">SQS (S3 method — CloudTrail log queue)</span>
+                            <span class="value" id="aws-cost-sqs">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-lambda" style="display:none;">
+                            <span class="label">Lambda (1-click sensor deployment orchestrator)</span>
+                            <span class="value" id="aws-cost-lambda">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-kms" style="display:none;">
+                            <span class="label">KMS Keys (per region per host account)</span>
+                            <span class="value" id="aws-cost-kms">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-secrets" style="display:none;">
+                            <span class="label">Secrets Manager (API client secret)</span>
+                            <span class="value" id="aws-cost-secrets">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-nat" style="display:none;">
+                            <span class="label">NAT Gateway + Elastic IP (per region per host account, always-on)</span>
+                            <span class="value" id="aws-cost-nat">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-ec2" style="display:none;">
+                            <span class="label">EC2 Scanner (c6a.2xlarge, scan-time only)</span>
+                            <span class="value" id="aws-cost-ec2">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="aws-row-transfer" style="display:none;">
+                            <span class="label">Data Transfer Out (scan metadata ~0.5 GB/scan)</span>
+                            <span class="value" id="aws-cost-transfer">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item">
+                            <span class="label">Total Monthly Cost</span>
+                            <span class="value" id="aws-totalBreakdown">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>Pricing Details</h4>
+                        <ul>
+                            <li><strong>EC2 c6a.2xlarge (scanner):</strong> $0.306/hour on-demand us-east-1</li>
+                            <li><strong>NAT Gateway:</strong> $0.045/hour + $0.045/GB processed</li>
+                            <li><strong>Elastic IP:</strong> $0.005/hour (associated with NAT Gateway)</li>
+                            <li><strong>KMS CMK:</strong> $1.00/key/month</li>
+                            <li><strong>Secrets Manager:</strong> $0.40/secret/month</li>
+                            <li><strong>CloudTrail:</strong> $2.00/trail/region/month (first copy)</li>
+                            <li><strong>IAM Roles, SSM, VPC, Subnets, SGs:</strong> Free</li>
+                        </ul>
+                        <p style="margin-top:10px;"><strong>Scanning modes:</strong></p>
+                        <ul>
+                            <li><strong>Cross-account:</strong> VPC/NAT/KMS stack deployed in host account(s) only. Target accounts: IAM roles + KMS key only.</li>
+                            <li><strong>Per-account:</strong> Full VPC stack in every account × every region.</li>
+                            <li><strong>Use existing infra:</strong> No new VPC stack — scanner from another registered account handles scanning. KMS key still deployed per account.</li>
+                        </ul>
+                        <p style="margin-top:10px;"><strong>Cost averaging:</strong> EC2 scanner hours are averaged monthly (e.g. quarterly = 1 scan ÷ 3 months).</p>
+                    </div>
+
+                    <div class="info-box" style="background:#f0fafa; border-left-color:#61C4C9;">
+                        <h4>Cost Optimization</h4>
+                        <ul>
+                            <li><strong>Use cross-account scanning</strong> — deploy VPC infrastructure in 1 host account, not every account. Largest cost lever for orgs.</li>
+                            <li><strong>Disable NAT Gateway</strong> — scanner instances use temporary dynamic public IPs. Saves $0.045/hr × 730 hrs × regions.</li>
+                            <li><strong>Bring your own VPC</strong> — skip VPC/NAT/subnet provisioning entirely.</li>
+                            <li><strong>Reduce scan frequency</strong> — quarterly is default; each step up doubles EC2 cost.</li>
+                            <li><strong>Limit regions</strong> — each region adds a full always-on stack (NAT + KMS).</li>
+                        </ul>
+                    </div>
+
+                    <div class="info-box" style="background:#f0fafa; border-left-color:var(--crwd-deep-sea);">
+                        <h4>About AWS DSPM Infrastructure</h4>
+                        <p>When CrowdStrike deploys agentless scanning in AWS, the following CloudFormation stacks are created:</p>
+                        <ul>
+                            <li><strong>Root stack:</strong> <code>CrowdStrike-CSPM-Integration-DSPM</code> — IAM roles, Instance Profile, Secrets Manager secret, root SSM parameter</li>
+                            <li><strong>Regional substacks:</strong> <code>CrowdStrike-CSPM-Integration-DSPM-&lt;name&gt;-substack-env-&lt;region&gt;</code> — VPC (/22 CIDR), Internet Gateway, NAT Gateway, Elastic IP, 4 subnets (1 public + 3 private), 2 route tables, 2 Security Groups (scanner + DB), S3 VPC endpoint, KMS key, regional SSM parameter</li>
+                            <li><strong>Target account stacks (cross-account):</strong> IAM roles (Integration + Scanner) + KMS key only</li>
+                        </ul>
+                        <p style="margin-top:10px;"><strong>Scan-time resources (temporary — created and terminated per scan):</strong></p>
+                        <ul>
+                            <li>EC2 <code>c6a.2xlarge</code> scanner instance (in private scanner subnet)</li>
+                            <li>EBS snapshots + temporary volumes (for EC2 instance scanning)</li>
+                            <li>RDS clones (for RDS database scanning)</li>
+                            <li>Redshift clones (for Redshift cluster scanning)</li>
+                        </ul>
+                        <p style="margin-top:10px;"><strong>Documentation:</strong></p>
+                        <ul>
+                            <li><a href="https://docs.crowdstrike.com/r/s21b26b4" target="_blank">Agentless Scanning Infrastructure Options for AWS</a></li>
+                            <li><a href="https://docs.crowdstrike.com/r/e4757a2e" target="_blank">Agentless Scanning Network Configuration for AWS</a></li>
+                            <li><a href="https://docs.crowdstrike.com/r/j4da1d52" target="_blank">Agentless Scanning Cost Estimation for AWS</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
         </div>
         </div>
         <!-- End AWS Tab Content -->
