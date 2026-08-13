@@ -232,7 +232,7 @@ assert('2 TU (2 × 0.015 × 730) = $21.90', rtv2.throughput, 21.90);
 assert('Storage account = $5.00', rtv2.storage, 5.00);
 assert('RTV total 2 TU = $34.93', rtv2.total, 34.93);
 const rtv1 = calcAzureRTV(1);
-assert('RTV total 1 TU = $18.98', rtv1.total, 18.98);
+assert('RTV total 1 TU = $23.98', rtv1.total, 23.98);
 // each additional TU adds 0.015 × 730 = $10.95
 assert('Each additional TU adds $10.95', rtv2.total - rtv1.total, 10.95);
 
