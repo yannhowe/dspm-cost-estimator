@@ -651,6 +651,21 @@
                             <span class="value" id="transferCost">$0.00</span>
                         </div>
 
+                        <div class="breakdown-item" id="eventHubNamespaceRow" style="display:none;">
+                            <span class="label">Event Hub Namespace (shared, 1 per CID)</span>
+                            <span class="value" id="eventHubNamespaceCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="eventHubThroughputRow" style="display:none;">
+                            <span class="label">Event Hub Throughput Units</span>
+                            <span class="value" id="eventHubThroughputCost">$0.00</span>
+                        </div>
+
+                        <div class="breakdown-item" id="eventHubStorageRow" style="display:none;">
+                            <span class="label">Storage Account (legacy registrations only)</span>
+                            <span class="value" id="eventHubStorageCost">$0.00</span>
+                        </div>
+
                         <div class="breakdown-item">
                             <span class="label">Total Monthly Cost</span>
                             <span class="value" id="totalBreakdown">$0.00</span>
@@ -1082,6 +1097,16 @@
                 document.getElementById('publicIpCost').textContent = `$${combinedResources.publicIp.toFixed(2)}`;
                 document.getElementById('vmCost').textContent = `$${combinedResources.virtualMachine.toFixed(2)}`;
                 document.getElementById('transferCost').textContent = `$${combinedResources.dataTransfer.toFixed(2)}`;
+
+                // Event Hub rows — only show when Real-time Visibility is enabled
+                const rtvActive = rtvEnabled;
+                document.getElementById('eventHubNamespaceRow').style.display = rtvActive ? 'flex' : 'none';
+                document.getElementById('eventHubThroughputRow').style.display = rtvActive ? 'flex' : 'none';
+                document.getElementById('eventHubStorageRow').style.display = rtvActive ? 'flex' : 'none';
+                document.getElementById('eventHubNamespaceCost').textContent = `$${combinedResources.eventHubNamespace.toFixed(2)}`;
+                document.getElementById('eventHubThroughputCost').textContent = `$${combinedResources.throughputUnits.toFixed(2)}`;
+                document.getElementById('eventHubStorageCost').textContent = `$${combinedResources.storageAccount.toFixed(2)}`;
+
                 document.getElementById('totalBreakdown').textContent = `$${totalMonthlyCost.toFixed(2)}`;
 
                 // Update pricing details from pricing data
