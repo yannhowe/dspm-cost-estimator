@@ -1,24 +1,23 @@
 {
-  "lastUpdated": "2026-03-10",
+  "lastUpdated": "2026-08-13",
   "provider": "aws",
   "region": "us-east-1",
   "currency": "USD",
-  "note": "Prices based on AWS US East (N. Virginia) region. Update periodically using update-aws-pricing.sh script.",
+  "note": "Prices based on AWS US East (N. Virginia) region on-demand rates.",
   "pricing": {
     "iamRole": {
       "service": "IAM",
       "product": "IAM Role",
       "pricePerMonth": 0,
       "unitOfMeasure": "Free",
-      "note": "No charge for IAM roles",
       "source": "https://aws.amazon.com/iam/pricing/"
     },
     "cloudTrail": {
       "service": "CloudTrail",
-      "product": "Management Events",
-      "pricePerTrail": 2.00,
-      "unitOfMeasure": "Per trail per region",
-      "note": "First copy is $2/month per region",
+      "product": "Management Events - first copy",
+      "pricePerTrailPerRegion": 2.00,
+      "unitOfMeasure": "Per trail per region per month",
+      "note": "First trail in each region is free; additional trails $2/region/month. Cost calculator assumes 1 trail per region.",
       "source": "https://aws.amazon.com/cloudtrail/pricing/"
     },
     "s3Storage": {
@@ -26,23 +25,23 @@
       "product": "Standard Storage",
       "pricePerGB": 0.023,
       "unitOfMeasure": "Per GB per month",
-      "note": "For CloudTrail logs storage",
+      "note": "For CloudTrail logs storage (~1 GB/month estimate)",
       "source": "https://aws.amazon.com/s3/pricing/"
     },
-    "eventBridge": {
+    "eventBridgeRule": {
       "service": "EventBridge",
       "product": "Custom Events",
       "pricePerMillionEvents": 1.00,
       "unitOfMeasure": "Per million events",
-      "note": "For real-time event monitoring",
+      "note": "Two EventBridge rules per region (IOA + readonly). At ~1M events/month/region.",
       "source": "https://aws.amazon.com/eventbridge/pricing/"
     },
     "sqs": {
       "service": "SQS",
-      "product": "Standard Queue",
+      "product": "Standard Queue Requests",
       "pricePerMillionRequests": 0.40,
       "unitOfMeasure": "Per million requests",
-      "note": "For event queue processing",
+      "note": "Used only when Real-time Visibility is configured via S3 method",
       "source": "https://aws.amazon.com/sqs/pricing/"
     },
     "lambda": {
@@ -50,15 +49,15 @@
       "product": "Function Invocations",
       "pricePerMillionInvocations": 0.20,
       "unitOfMeasure": "Per million invocations",
-      "note": "For DSPM scanning functions",
+      "note": "Used by 1-click sensor deployment orchestrator",
       "source": "https://aws.amazon.com/lambda/pricing/"
     },
     "lambdaDuration": {
       "service": "Lambda",
-      "product": "Duration (x86)",
+      "product": "Duration (x86, 1024 MB)",
       "pricePerGBSecond": 0.0000166667,
       "unitOfMeasure": "Per GB-second",
-      "note": "Compute time for Lambda functions",
+      "note": "1024 MB × estimated 5s per invocation",
       "source": "https://aws.amazon.com/lambda/pricing/"
     },
     "kmsKey": {
@@ -66,15 +65,24 @@
       "product": "Customer Managed Key",
       "pricePerMonth": 1.00,
       "unitOfMeasure": "Per key per month",
-      "note": "For encryption keys",
+      "note": "1 key per region per host account (agentless scanning); 1 key per target account in cross-account mode",
       "source": "https://aws.amazon.com/kms/pricing/"
+    },
+    "secretsManager": {
+      "service": "Secrets Manager",
+      "product": "Secret",
+      "pricePerSecretPerMonth": 0.40,
+      "pricePerTenThousandApiCalls": 0.05,
+      "unitOfMeasure": "Per secret per month + API calls",
+      "note": "1 secret per host account (CrowdStrike API client secret)",
+      "source": "https://aws.amazon.com/secrets-manager/pricing/"
     },
     "natGateway": {
       "service": "VPC",
       "product": "NAT Gateway",
       "pricePerHour": 0.045,
       "unitOfMeasure": "Per hour",
-      "note": "Optional for DSPM",
+      "note": "1 per region per host account; optional (can be disabled)",
       "source": "https://aws.amazon.com/vpc/pricing/"
     },
     "natGatewayDataProcessing": {
@@ -82,16 +90,39 @@
       "product": "NAT Gateway Data Processing",
       "pricePerGB": 0.045,
       "unitOfMeasure": "Per GB",
-      "note": "Data processed through NAT Gateway",
       "source": "https://aws.amazon.com/vpc/pricing/"
+    },
+    "elasticIp": {
+      "service": "EC2",
+      "product": "Elastic IP Address",
+      "pricePerHour": 0.005,
+      "unitOfMeasure": "Per hour (when associated with running NAT Gateway)",
+      "note": "1 Elastic IP per NAT Gateway",
+      "source": "https://aws.amazon.com/ec2/pricing/on-demand/"
+    },
+    "ec2C6a2xlarge": {
+      "service": "EC2",
+      "product": "c6a.2xlarge (8 vCPU, 16 GiB RAM)",
+      "pricePerHour": 0.306,
+      "unitOfMeasure": "Per hour on-demand",
+      "note": "Scanner VM — created at scan start, terminated on completion. Linux on-demand us-east-1.",
+      "source": "https://aws.amazon.com/ec2/pricing/on-demand/"
     },
     "dataTransfer": {
       "service": "EC2",
-      "product": "Data Transfer Out",
+      "product": "Data Transfer Out to Internet",
       "pricePerGB": 0.09,
-      "unitOfMeasure": "Per GB",
-      "note": "First 100 GB/month to internet",
+      "unitOfMeasure": "Per GB (first 100 GB/month)",
+      "note": "Scanner uploads scan metadata (~0.5 GB per scan) to CrowdStrike",
       "source": "https://aws.amazon.com/ec2/pricing/on-demand/"
+    },
+    "ssmParameter": {
+      "service": "SSM",
+      "product": "Parameter Store Standard",
+      "pricePerMonth": 0,
+      "unitOfMeasure": "Free",
+      "note": "Standard parameters are free; 2 SSM parameters per account",
+      "source": "https://aws.amazon.com/systems-manager/pricing/"
     }
   }
 }
