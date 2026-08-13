@@ -1165,131 +1165,6 @@
             }
         }
 
-        // AWS Feature Calculators
-        FeatureCalculators.aws = {
-            calculateIOMs(config, pricing) {
-                return { total: 0, resources: {}, details: 'IAM roles have no charge' };
-            },
-
-            calculateRealtimeVisibility(config, pricing) {
-                if (!config.features.rtv.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
-
-                const method = config.features.rtv.method;
-                const regions = config.features.rtv.regions;
-
-                // CloudTrail: first copy per region is $2/month (assume 1 trail, already exists — note only)
-                // We show it but note it may already be covered
-                const cloudTrailCost = pricing.cloudTrail.pricePerTrailPerRegion * regions;
-
-                let eventBridgeCost = 0;
-                let sqsCost = 0;
-
-                if (method === 'eventbridge') {
-                    // 2 EventBridge rules per region × ~1M events/month = $1/million
-                    // At typical CloudTrail volume ~500k events/region/month, cost is well under $1
-                    eventBridgeCost = 2 * regions * (500000 / 1000000) * pricing.eventBridgeRule.pricePerMillionEvents;
-                } else {
-                    // S3 method: SQS queue ~100k requests/month
-                    sqsCost = (100000 / 1000000) * pricing.sqs.pricePerMillionRequests;
-                }
-
-                const total = cloudTrailCost + eventBridgeCost + sqsCost;
-                return {
-                    total,
-                    resources: { cloudTrail: cloudTrailCost, eventBridge: eventBridgeCost, sqs: sqsCost },
-                    details: `${regions} region(s), ${method === 'eventbridge' ? 'EventBridge' : 'S3'} method`
-                };
-            },
-
-            calculateSensorDeployment(config, pricing) {
-                if (!config.features.sensor.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
-                // Lambda ~10k invocations/month × $0.20/million = $0.002 + duration negligible
-                const lambdaCost = (10000 / 1000000) * pricing.lambda.pricePerMillionInvocations;
-                const durationCost = 10000 * 1 * 1024/1024 * pricing.lambdaDuration.pricePerGBSecond; // 10k × 1s × 1GB
-                return {
-                    total: lambdaCost + durationCost,
-                    resources: { lambda: lambdaCost + durationCost },
-                    details: 'Lambda orchestrator + SSM — negligible'
-                };
-            },
-
-            calculateIDP(config, pricing) {
-                if (!config.features.idp.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
-                return { total: 0, resources: {}, details: 'No additional AWS infra cost beyond Real-time Visibility' };
-            },
-
-            calculateAgentless(config, pricing) {
-                if (!config.features.agentless.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
-
-                const accounts = config.accounts;
-                const scanningMode = config.features.agentless.scanningMode;
-                const networkConfig = config.features.agentless.networkConfig;
-                const hostAccounts = config.features.agentless.hostAccounts;
-                const regions = config.features.agentless.regions;
-                const scanFrequency = config.features.agentless.scanFrequency;
-                const scanDuration = config.features.agentless.scanDuration;
-                const scansPerMonth = scanFrequencyMap[scanFrequency];
-
-                // Infrastructure multiplier: how many accounts get VPC stacks
-                // cross-account: only host accounts get VPC stacks
-                // per-account: every account gets VPC stacks
-                // use-existing: no new VPC stacks at all
-                let infraAccounts;
-                if (scanningMode === 'cross-account') {
-                    infraAccounts = hostAccounts;
-                } else if (scanningMode === 'per-account') {
-                    infraAccounts = accounts;
-                } else {
-                    infraAccounts = 0; // use-existing: no new infra
-                }
-
-                // KMS: 1 key per region per host account + 1 per target account (cross-account)
-                // per-account: 1 per region per account
-                // use-existing: 1 per account (minimal)
-                let kmsKeys;
-                if (scanningMode === 'cross-account') {
-                    kmsKeys = (hostAccounts * regions) + (accounts - hostAccounts); // host regional + target account keys
-                } else if (scanningMode === 'per-account') {
-                    kmsKeys = accounts * regions;
-                } else {
-                    kmsKeys = accounts; // one per account even when using existing infra
-                }
-                const kmsCost = kmsKeys * pricing.kmsKey.pricePerMonth;
-
-                // Secrets Manager: 1 secret per host account (API client secret)
-                const secretsCount = (scanningMode === 'use-existing') ? 0 : hostAccounts;
-                const secretsCost = secretsCount * pricing.secretsManager.pricePerSecretPerMonth;
-
-                // NAT Gateway + Elastic IP: per region per infra account, always-on
-                let natCost = 0;
-                let eipCost = 0;
-                if (networkConfig === 'new-vpc-nat') {
-                    natCost = pricing.natGateway.pricePerHour * infraAccounts * regions * 730;
-                    eipCost = pricing.elasticIp.pricePerHour * infraAccounts * regions * 730;
-                }
-
-                // EC2 scanner: created per scan, runs for all accounts regardless of mode
-                // In cross-account: 1 scanner handles all target accounts sequentially
-                // We estimate: 1 scanner run per region per scan cycle (not per account)
-                const scannerRunsPerMonth = scansPerMonth * regions * (scanningMode === 'per-account' ? accounts : hostAccounts);
-                const ec2Cost = pricing.ec2C6a2xlarge.pricePerHour * scanDuration * scannerRunsPerMonth;
-
-                // Data transfer: ~0.5 GB metadata per scanner run
-                const metadataGB = 0.5 * scannerRunsPerMonth;
-                const transferCost = metadataGB * pricing.dataTransfer.pricePerGB;
-                const natDataCost = (networkConfig === 'new-vpc-nat') ? metadataGB * pricing.natGatewayDataProcessing.pricePerGB : 0;
-
-                const total = kmsCost + secretsCost + natCost + eipCost + ec2Cost + transferCost + natDataCost;
-                const modeLabel = { 'cross-account': 'Cross-account', 'per-account': 'Per-account', 'use-existing': 'Use existing infra' }[scanningMode];
-
-                return {
-                    total,
-                    resources: { kms: kmsCost, secrets: secretsCost, nat: natCost + eipCost, ec2: ec2Cost, transfer: transferCost + natDataCost },
-                    details: `${modeLabel}: ${accounts} account(s), ${regions} region(s), ${scanFrequencyLabel[scanFrequency]}, ${scanDuration}h/scan`
-                };
-            }
-        };
-
         // Load pricing from JSON file
         async function loadPricingData() {
             try {
@@ -1440,6 +1315,132 @@
                         details: `${modeLabel}: ${subscriptions} subscription(s) × ${regions} region(s), ${scanFrequencyLabel[scanFrequency]}, ${scanDuration}h per scan${vnetLabel}`
                     };
                 }
+            }
+        };
+
+        // AWS Feature Calculators
+        FeatureCalculators.aws = {
+            calculateIOMs(config, pricing) {
+                return { total: 0, resources: {}, details: 'IAM roles have no charge' };
+            },
+
+            calculateRealtimeVisibility(config, pricing) {
+                if (!config.features.rtv.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
+
+                const method = config.features.rtv.method;
+                const regions = config.features.rtv.regions;
+
+                // CloudTrail: first copy per region is $2/month (assume 1 trail, already exists — note only)
+                // We show it but note it may already be covered
+                const cloudTrailCost = pricing.cloudTrail.pricePerTrailPerRegion * regions;
+
+                let eventBridgeCost = 0;
+                let sqsCost = 0;
+
+                if (method === 'eventbridge') {
+                    // 2 EventBridge rules per region × ~1M events/month = $1/million
+                    // At typical CloudTrail volume ~500k events/region/month, cost is well under $1
+                    eventBridgeCost = 2 * regions * (500000 / 1000000) * pricing.eventBridgeRule.pricePerMillionEvents;
+                } else {
+                    // S3 method: SQS queue ~100k requests/month
+                    sqsCost = (100000 / 1000000) * pricing.sqs.pricePerMillionRequests;
+                }
+
+                const total = cloudTrailCost + eventBridgeCost + sqsCost;
+                return {
+                    total,
+                    resources: { cloudTrail: cloudTrailCost, eventBridge: eventBridgeCost, sqs: sqsCost },
+                    details: `${regions} region(s), ${method === 'eventbridge' ? 'EventBridge' : 'S3'} method`
+                };
+            },
+
+            calculateSensorDeployment(config, pricing) {
+                if (!config.features.sensor.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
+                // Lambda ~10k invocations/month × $0.20/million = $0.002 + duration negligible
+                const lambdaCost = (10000 / 1000000) * pricing.lambda.pricePerMillionInvocations;
+                const durationCost = 10000 * 1 * 1024/1024 * pricing.lambdaDuration.pricePerGBSecond; // 10k × 1s × 1GB
+                return {
+                    total: lambdaCost + durationCost,
+                    resources: { lambda: lambdaCost + durationCost },
+                    details: 'Lambda orchestrator + SSM — negligible'
+                };
+            },
+
+            calculateIDP(config, pricing) {
+                if (!config.features.idp.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
+                return { total: 0, resources: {}, details: 'No additional AWS infra cost beyond Real-time Visibility' };
+            },
+
+            calculateAgentless(config, pricing) {
+                if (!config.features.agentless.enabled) return { total: 0, resources: {}, details: 'Not enabled' };
+
+                const accounts = config.accounts;
+                const scanningMode = config.features.agentless.scanningMode;
+                const networkConfig = config.features.agentless.networkConfig;
+                const hostAccounts = config.features.agentless.hostAccounts;
+                const regions = config.features.agentless.regions;
+                const scanFrequency = config.features.agentless.scanFrequency;
+                const scanDuration = config.features.agentless.scanDuration;
+                const scansPerMonth = scanFrequencyMap[scanFrequency];
+
+                // Infrastructure multiplier: how many accounts get VPC stacks
+                // cross-account: only host accounts get VPC stacks
+                // per-account: every account gets VPC stacks
+                // use-existing: no new VPC stacks at all
+                let infraAccounts;
+                if (scanningMode === 'cross-account') {
+                    infraAccounts = hostAccounts;
+                } else if (scanningMode === 'per-account') {
+                    infraAccounts = accounts;
+                } else {
+                    infraAccounts = 0; // use-existing: no new infra
+                }
+
+                // KMS: 1 key per region per host account + 1 per target account (cross-account)
+                // per-account: 1 per region per account
+                // use-existing: 1 per account (minimal)
+                let kmsKeys;
+                if (scanningMode === 'cross-account') {
+                    kmsKeys = (hostAccounts * regions) + Math.max(0, accounts - hostAccounts); // host regional + target account keys
+                } else if (scanningMode === 'per-account') {
+                    kmsKeys = accounts * regions;
+                } else {
+                    kmsKeys = accounts; // one per account even when using existing infra
+                }
+                const kmsCost = kmsKeys * pricing.kmsKey.pricePerMonth;
+
+                // Secrets Manager: 1 secret per host account (API client secret)
+                const secretsCount = (scanningMode === 'use-existing') ? 0 : hostAccounts;
+                const secretsCost = secretsCount * pricing.secretsManager.pricePerSecretPerMonth;
+
+                // NAT Gateway + Elastic IP: per region per infra account, always-on
+                let natCost = 0;
+                let eipCost = 0;
+                if (networkConfig === 'new-vpc-nat') {
+                    natCost = pricing.natGateway.pricePerHour * infraAccounts * regions * 730;
+                    eipCost = pricing.elasticIp.pricePerHour * infraAccounts * regions * 730;
+                }
+
+                // EC2 scanner: created per scan, runs for all accounts regardless of mode
+                // In cross-account: 1 scanner handles all target accounts sequentially
+                // We estimate: 1 scanner run per region per scan cycle (not per account)
+                const scannerRunsPerMonth = scanningMode === 'use-existing' ? 0 :
+                    scansPerMonth * regions * (scanningMode === 'per-account' ? accounts : hostAccounts);
+                const ec2Cost = pricing.ec2C6a2xlarge.pricePerHour * scanDuration * scannerRunsPerMonth;
+
+                // Data transfer: ~0.5 GB metadata per scanner run
+                const metadataGB = 0.5 * scannerRunsPerMonth;
+                const transferCost = metadataGB * pricing.dataTransfer.pricePerGB;
+                const natDataCost = (networkConfig === 'new-vpc-nat') ? metadataGB * pricing.natGatewayDataProcessing.pricePerGB : 0;
+
+                const total = kmsCost + secretsCost + natCost + eipCost + ec2Cost + transferCost + natDataCost;
+                const modeLabel = { 'cross-account': 'Cross-account', 'per-account': 'Per-account', 'use-existing': 'Use existing infra' }[scanningMode];
+
+                return {
+                    total,
+                    resources: { kms: kmsCost, secrets: secretsCost, nat: natCost + eipCost, ec2: ec2Cost, transfer: transferCost + natDataCost },
+                    details: `${modeLabel}: ${accounts} account(s), ${regions} region(s), ${scanFrequencyLabel[scanFrequency]}, ${scanDuration}h/scan`
+                };
             }
         };
 

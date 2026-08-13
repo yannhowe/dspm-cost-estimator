@@ -64,7 +64,7 @@ function calcAgentless(accounts, scanningMode, hostAccounts, networkConfig, regi
   };
   const scansPerMonth = scanFrequencyMap[scanFrequency];
   let infraAccounts = scanningMode === 'cross-account' ? hostAccounts : scanningMode === 'per-account' ? accounts : 0;
-  let kmsKeys = scanningMode === 'cross-account' ? (hostAccounts * regions) + (accounts - hostAccounts) :
+  let kmsKeys = scanningMode === 'cross-account' ? (hostAccounts * regions) + Math.max(0, accounts - hostAccounts) :
                 scanningMode === 'per-account' ? accounts * regions : accounts;
   const kmsCost = kmsKeys * P.kmsKey.pricePerMonth;
   const secretsCount = scanningMode === 'use-existing' ? 0 : hostAccounts;
@@ -74,7 +74,8 @@ function calcAgentless(accounts, scanningMode, hostAccounts, networkConfig, regi
     natCost = P.natGateway.pricePerHour * infraAccounts * regions * 730;
     eipCost = P.elasticIp.pricePerHour * infraAccounts * regions * 730;
   }
-  const scannerRuns = scansPerMonth * regions * (scanningMode === 'per-account' ? accounts : hostAccounts);
+  const scannerRuns = scanningMode === 'use-existing' ? 0 :
+    scansPerMonth * regions * (scanningMode === 'per-account' ? accounts : hostAccounts);
   const ec2Cost = P.ec2C6a2xlarge.pricePerHour * scanDuration * scannerRuns;
   const metadataGB = 0.5 * scannerRuns;
   const transferCost = metadataGB * P.dataTransfer.pricePerGB;
@@ -136,6 +137,14 @@ assert('Use-existing: NAT = $0', existing.nat, 0.00);
 assert('Use-existing: Secrets = $0 (no host account)', existing.secrets, 0.00);
 // KMS: accounts (5) since scanningMode=use-existing
 assert('Use-existing: KMS = $5 (1 per account)', existing.kms, 5.00);
+// BUG I2 fix: use-existing EC2 must be $0 (scanner lives in another account)
+assert('Use-existing: EC2 = $0 (no scanner in this account)', existing.ec2, 0.00);
+
+// ── BUG I3 fix: KMS floor when hostAccounts > totalAccounts ──────────────────
+section('Agentless — cross-account KMS floor (hostAccounts > accounts)');
+const kmsFloor = calcAgentless(3, 'cross-account', 5, 'new-vpc-nat', 2, 'quarterly', 4);
+// kmsKeys = (5×2) + Math.max(0, 3-5) = 10 + 0 = 10  (not 8 from the buggy formula)
+assert('KMS floor: hostAccounts(5)>accounts(3), 2 regions → 10 keys = $10', kmsFloor.kms, 10.00);
 
 // ── Scan frequency scaling ────────────────────────────────────────────────────
 section('EC2 cost scales with scan frequency');
