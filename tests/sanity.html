@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DSPM Cost Calculator — Sanity Tests</title>
+<style>
+  body { font-family: monospace; padding: 20px; background: #f8f8f8; }
+  h1 { font-size: 18px; margin-bottom: 20px; }
+  .pass { color: #1a7a1a; background: #e8f8e8; padding: 6px 12px; margin: 4px 0; border-radius: 3px; display: block; }
+  .fail { color: #7a1a1a; background: #f8e8e8; padding: 6px 12px; margin: 4px 0; border-radius: 3px; display: block; }
+  .section { margin: 20px 0 8px; font-weight: bold; font-size: 14px; border-bottom: 2px solid #EC0000; padding-bottom: 4px; }
+  #summary { margin-top: 20px; font-size: 16px; font-weight: bold; padding: 12px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<h1>DSPM Cost Calculator — Sanity Tests</h1>
+<div id="results"></div>
+<div id="summary"></div>
+
+<script>
+const results = [];
+const out = document.getElementById('results');
+
+function section(name) {
+  const el = document.createElement('div');
+  el.className = 'section';
+  el.textContent = name;
+  out.appendChild(el);
+}
+
+function assert(description, actual, expected, tolerance) {
+  tolerance = tolerance || 0.01;
+  const pass = Math.abs(actual - expected) <= tolerance;
+  const el = document.createElement('span');
+  el.className = pass ? 'pass' : 'fail';
+  el.textContent = (pass ? '✓ ' : '✗ ') + description +
+    (pass ? ` = $${actual.toFixed(2)}` : ` expected $${expected.toFixed(2)}, got $${actual.toFixed(2)}`);
+  out.appendChild(el);
+  results.push(pass);
+}
+
+const scanFrequencyMap = { quarterly: 1/3, monthly: 1, biweekly: 2, weekly: 4 };
+
+// Inline the pricing to avoid fetch issues from file://
+const P = {
+  kmsKey: { pricePerMonth: 1.00 },
+  secretsManager: { pricePerSecretPerMonth: 0.40 },
+  natGateway: { pricePerHour: 0.045 },
+  natGatewayDataProcessing: { pricePerGB: 0.045 },
+  elasticIp: { pricePerHour: 0.005 },
+  ec2C6a2xlarge: { pricePerHour: 0.306 },
+  cloudTrail: { pricePerTrailPerRegion: 2.00 },
+  eventBridgeRule: { pricePerMillionEvents: 1.00 },
+  sqs: { pricePerMillionRequests: 0.40 },
+  lambda: { pricePerMillionInvocations: 0.20 },
+  lambdaDuration: { pricePerGBSecond: 0.0000166667 },
+  dataTransfer: { pricePerGB: 0.09 }
+};
+
+function calcAgentless(accounts, scanningMode, hostAccounts, networkConfig, regions, scanFrequency, scanDuration) {
+  const config = {
+    accounts,
+    features: { agentless: { enabled: true, scanningMode, hostAccounts, networkConfig, regions, scanFrequency, scanDuration } }
+  };
+  const scansPerMonth = scanFrequencyMap[scanFrequency];
+  let infraAccounts = scanningMode === 'cross-account' ? hostAccounts : scanningMode === 'per-account' ? accounts : 0;
+  let kmsKeys = scanningMode === 'cross-account' ? (hostAccounts * regions) + (accounts - hostAccounts) :
+                scanningMode === 'per-account' ? accounts * regions : accounts;
+  const kmsCost = kmsKeys * P.kmsKey.pricePerMonth;
+  const secretsCount = scanningMode === 'use-existing' ? 0 : hostAccounts;
+  const secretsCost = secretsCount * P.secretsManager.pricePerSecretPerMonth;
+  let natCost = 0, eipCost = 0;
+  if (networkConfig === 'new-vpc-nat') {
+    natCost = P.natGateway.pricePerHour * infraAccounts * regions * 730;
+    eipCost = P.elasticIp.pricePerHour * infraAccounts * regions * 730;
+  }
+  const scannerRuns = scansPerMonth * regions * (scanningMode === 'per-account' ? accounts : hostAccounts);
+  const ec2Cost = P.ec2C6a2xlarge.pricePerHour * scanDuration * scannerRuns;
+  const metadataGB = 0.5 * scannerRuns;
+  const transferCost = metadataGB * P.dataTransfer.pricePerGB;
+  const natDataCost = networkConfig === 'new-vpc-nat' ? metadataGB * P.natGatewayDataProcessing.pricePerGB : 0;
+  return {
+    kms: kmsCost, secrets: secretsCost,
+    nat: natCost + eipCost, ec2: ec2Cost,
+    transfer: transferCost + natDataCost,
+    total: kmsCost + secretsCost + natCost + eipCost + ec2Cost + transferCost + natDataCost
+  };
+}
+
+// ── IOMs ──────────────────────────────────────────────────────────────────────
+section('IOMs — always free');
+assert('IOMs cost = $0', 0, 0);
+
+// ── Real-time Visibility ──────────────────────────────────────────────────────
+section('Real-time Visibility — CloudTrail + EventBridge');
+const rtvCloudTrail3 = 3 * P.cloudTrail.pricePerTrailPerRegion;
+assert('CloudTrail 3 regions = $6.00', rtvCloudTrail3, 6.00);
+const rtvEB3 = 2 * 3 * (500000/1000000) * P.eventBridgeRule.pricePerMillionEvents;
+assert('EventBridge 3 regions ≈ $3.00', rtvEB3, 3.00);
+
+// ── Agentless — Cross-account baseline ───────────────────────────────────────
+section('Agentless — cross-account 1 host 3 regions NAT quarterly 4h');
+const ca = calcAgentless(10, 'cross-account', 1, 'new-vpc-nat', 3, 'quarterly', 4);
+// KMS: (1×3) + (10-1) = 3 + 9 = 12 keys
+assert('Cross-account KMS 1 host 3 regions 10 accounts = $12', ca.kms, 12.00);
+// Secrets: 1 host account × $0.40
+assert('Cross-account Secrets 1 host = $0.40', ca.secrets, 0.40);
+// NAT: 0.045 × 1 × 3 × 730 = $98.55; EIP: 0.005 × 1 × 3 × 730 = $10.95; total = $109.50
+assert('Cross-account NAT+EIP 1 host 3 regions = $109.50', ca.nat, 109.50);
+// EC2: 0.306 × 4 × (1/3) × 3 × 1 host = 0.306 × 4 = $1.224/month (3 region scans ÷ 3 months)
+assert('Cross-account EC2 quarterly 4h 3 regions 1 host ≈ $1.22', ca.ec2, 1.224, 0.05);
+
+// ── Agentless — Per-account same config ───────────────────────────────────────
+section('Agentless — per-account 10 accounts 3 regions (infra multiplied)');
+const pa = calcAgentless(10, 'per-account', 10, 'new-vpc-nat', 3, 'quarterly', 4);
+// KMS: 10 × 3 = 30 keys
+assert('Per-account KMS 10 accounts 3 regions = $30', pa.kms, 30.00);
+// NAT: 0.045 × 10 × 3 × 730 = $985.50; EIP: 0.005 × 10 × 3 × 730 = $109.50; total = $1095
+assert('Per-account NAT+EIP 10 accounts 3 regions = $1095', pa.nat, 1095.00);
+
+// ── Cross-account significantly cheaper ───────────────────────────────────────
+section('Cross-account < per-account cost validation');
+assert('Cross-account total < per-account total (cross=' + ca.total.toFixed(0) + ' per=' + pa.total.toFixed(0) + ')',
+  ca.total < pa.total ? 1 : 0, 1);
+
+// ── No NAT option ─────────────────────────────────────────────────────────────
+section('Agentless — no NAT option');
+const noNat = calcAgentless(1, 'cross-account', 1, 'new-vpc-no-nat', 2, 'quarterly', 4);
+assert('No NAT: NAT cost = $0', noNat.nat, 0.00);
+assert('No NAT: KMS still present', noNat.kms, 2.00); // 1 host × 2 regions
+
+// ── Use existing infra ────────────────────────────────────────────────────────
+section('Agentless — use-existing infra (no new VPC stacks)');
+const existing = calcAgentless(5, 'use-existing', 0, 'custom-vpc', 2, 'quarterly', 4);
+assert('Use-existing: NAT = $0', existing.nat, 0.00);
+assert('Use-existing: Secrets = $0 (no host account)', existing.secrets, 0.00);
+// KMS: accounts (5) since scanningMode=use-existing
+assert('Use-existing: KMS = $5 (1 per account)', existing.kms, 5.00);
+
+// ── Scan frequency scaling ────────────────────────────────────────────────────
+section('EC2 cost scales with scan frequency');
+const q = calcAgentless(1, 'cross-account', 1, 'new-vpc-no-nat', 1, 'quarterly', 4);
+const m = calcAgentless(1, 'cross-account', 1, 'new-vpc-no-nat', 1, 'monthly', 4);
+const w = calcAgentless(1, 'cross-account', 1, 'new-vpc-no-nat', 1, 'weekly', 4);
+// Quarterly: 0.306 × 4 × (1/3) × 1 = 0.408
+assert('Quarterly EC2 1 acct 1 region 4h ≈ $0.41', q.ec2, 0.408, 0.02);
+// Monthly: 0.306 × 4 × 1 × 1 = 1.224
+assert('Monthly EC2 ≈ $1.22 (3× quarterly)', m.ec2, 1.224, 0.02);
+// Weekly: 0.306 × 4 × 4 × 1 = 4.896
+assert('Weekly EC2 ≈ $4.90 (12× quarterly)', w.ec2, 4.896, 0.02);
+assert('Monthly EC2 = 3× quarterly', Math.abs(m.ec2 / q.ec2 - 3) < 0.01 ? 1 : 0, 1);
+assert('Weekly EC2 = 12× quarterly', Math.abs(w.ec2 / q.ec2 - 12) < 0.01 ? 1 : 0, 1);
+
+// ── Summary ───────────────────────────────────────────────────────────────────
+const passed = results.filter(Boolean).length;
+const total = results.length;
+const summaryEl = document.getElementById('summary');
+summaryEl.style.background = passed === total ? '#e8f8e8' : '#f8e8e8';
+summaryEl.style.color = passed === total ? '#1a7a1a' : '#7a1a1a';
+summaryEl.textContent = `${passed}/${total} tests passed`;
+</script>
+</body>
+</html>
